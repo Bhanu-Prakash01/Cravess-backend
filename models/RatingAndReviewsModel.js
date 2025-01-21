@@ -6,6 +6,11 @@ const ratingAndReviewSchema = new mongoose.Schema({
 		required: true,
 		ref: "User",
 	},
+	orderId: {
+		type: mongoose.Schema.Types.ObjectId,
+		required: true,
+		ref: "Order",
+	  },
 	rating: {
 		type: Number,
 		required: true,
@@ -13,6 +18,14 @@ const ratingAndReviewSchema = new mongoose.Schema({
 	reviewText: {
 		type: String,
 		required: true,
+	},
+	createdAt: {
+		type: Date,
+		default: Date.now,
+	},
+	updatedAt: {
+		type: Date,
+		default: Date.now,
 	},
 });
 

@@ -4,7 +4,7 @@ const bcrypt = require("bcryptjs");
 require("dotenv").config();
 
 exports.registerUser = async (req, res) => {
-  const { userName, password, userEmail, phone, role } = req.body;
+  const { userName, userEmail, phone, role } = req.body;
 
   try {
     // Check if user already exists
@@ -22,15 +22,15 @@ exports.registerUser = async (req, res) => {
     // Create a new user instance
     user = new User({
       userName,
-      password,
+      // password,
       userEmail,
       phone,
       role,
     });
 
     // Hash password before saving
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
+    // const salt = await bcrypt.genSalt(10);
+    // user.password = await bcrypt.hash(password, salt);
 
     // Save the user to the database
     await user.save();
