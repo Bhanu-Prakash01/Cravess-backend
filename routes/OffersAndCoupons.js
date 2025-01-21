@@ -7,7 +7,10 @@ const {
     removeOfferFromDish,
     createCoupon,
     updateCoupon,
-    deleteCoupon
+    deleteCoupon,
+    getAllCoupons,
+    getAllCouponsByRestaurantId,
+    getCouponById
 } = require("../controllers/offersAndCoupons")
 
 // Route to create a new offer
@@ -27,5 +30,11 @@ router.put("/updateCoupon/:id", updateCoupon)
 
 // Route to delete a coupon
 router.delete("/deleteCoupon/:id", deleteCoupon)
+
+router.get("/getAllCoupons", getAllCoupons)
+
+router.get("/getCouponById/:id", getCouponById)
+
+router.get("/getAllCouponsByRestaurant/:id", getAllCouponsByRestaurantId)
 
 module.exports = router

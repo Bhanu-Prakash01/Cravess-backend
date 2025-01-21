@@ -10,7 +10,7 @@ const deliveryAgentDetailsSchema = new mongoose.Schema({
   //   },
   //   // required: true,
   // },
-  name: String,
+  agent_name: String,
   t_shirt_size:{
     type: String,    
     enum:CONSTANTS.ENUM.T_SHIRT_SIZE ,

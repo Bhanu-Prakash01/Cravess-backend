@@ -267,6 +267,14 @@ exports.changeAvailabilityStatus = async (req, res) => {
   }
 };
 
+exports.getAllRestaurants = async (req, res) => {
+  try {
+    const restaurants = await RestaurantDetails.find();
+    res.status(200).json(restaurants);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
 // Add a new dish
 exports.addDish = async (req, res) => {
@@ -295,6 +303,25 @@ exports.getDishesByRestaurant = async (req, res) => {
 
   try {
       const dishes = await Dish.find({ restaurant: restaurantId });
+      res.status(200).json(dishes);
+  } catch (err) {
+      res.status(500).json({ error: err.message });
+  }
+};
+
+exports.deleteDishesById = async (req, res) => {
+  const { id } = req.params;
+  try {
+      await Dish.findByIdAndDelete(id);
+      res.status(200).json({ message: 'Dish deleted successfully' });
+  } catch (err) {
+      res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getAllDishes = async (req, res) => {
+  try {
+      const dishes = await Dish.find();
       res.status(200).json(dishes);
   } catch (err) {
       res.status(500).json({ error: err.message });

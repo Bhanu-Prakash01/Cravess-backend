@@ -1,7 +1,7 @@
 const DeliveryAgentDetails = require("../models/DeliveryAgentDetails");
 const AccountDetails = require("../models/BankDetailsModel");
 const User = require("../models/userModel");
-// Helper function to validate required fields
+const { uploadDocuments } = require("../Utils/Cloudinary");// Helper function to validate required fields
 const validateFields = (fields, requiredFields) => {
   for (const field of requiredFields) {
     if (!fields[field]) {
@@ -16,6 +16,7 @@ const moment = require("moment"); // Ensure moment is installed
 
 exports.createDeliveryAgent = async (req, res) => {
   const {
+    agent_name,
     vehicle_type,
     vehicle_number,
     vehicle_owner_name,
@@ -49,6 +50,7 @@ exports.createDeliveryAgent = async (req, res) => {
     // "vehicleModel",
     // "document",
     // "location",
+    "agent_name",
     "userId",
     "gender",
     "aadharNumber",
@@ -82,6 +84,7 @@ exports.createDeliveryAgent = async (req, res) => {
 
     // Create new delivery agent details
     const newAgent = new DeliveryAgentDetails({
+      agent_name,
       vehicleDetails: {
         vehicle_type,
         vehicle_number,
@@ -162,7 +165,7 @@ exports.getDeliveryAgentDetailsById = async (req, res) => {
       assignedOrders,
       availabilityStatus,
       location,
-      userId,
+      // userId,
     } = req.body;
   
     const validationError = validateFields(req.body, [

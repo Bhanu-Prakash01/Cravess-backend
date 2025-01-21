@@ -5,6 +5,7 @@ const CONSTANTS = require("../constants/constants");
 // Define the schema for an order item
 const orderItemSchema = new mongoose.Schema({
   dishName: String,
+  dishId: String,
   quantity: Number,
   price: Number,
   restaurant: {
@@ -34,7 +35,10 @@ const deliveryDetailsSchema = new mongoose.Schema({
   //   ref: "DeliveryAgentDetails",
   // },
   deliveryAddress: String,
-  deliveryTime: Date,
+  orderTime: {
+    type: Date,
+    default: Date.now,
+  },
   deliveryStatus: {
     type: String,
     enum: CONSTANTS.ENUM.DELIVERY_STATUS,

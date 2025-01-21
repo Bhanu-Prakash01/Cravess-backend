@@ -5,7 +5,9 @@ const { ObjectId } = mongoose.Types;
 const { awardPoints, redeemPoints } = require("./LoyaltyReward");
 const Offer = require("../models/OfferSchema")
 const Coupon = require("../models/CouponSchema")
+const Dish = require("../models/dishSchema");
 const calculateDistance = require("../Utils/CalculateDistance");
+const DeliveryAgent = require("../models/DeliveryAgentDetails");
 
 const getUserPoints = async (userId) => {
   try {
@@ -23,9 +25,7 @@ exports.placeOrder = async (req, res) => {
   const {
     customer,
     items,
-    paymentStatus,
     deliveryDetails,
-    orderStatus,
     couponCode,
     redeemedPoints,
   } = req.body;
@@ -35,12 +35,32 @@ exports.placeOrder = async (req, res) => {
     let discountAmount = 0;
     let finalPrice = 0;
     let appliedCoupon = null;
+    // Check if all dishes are available
+    const unavailableDishes = [];
+    for (const item of items) {
+      const dish = await Dish.findOne({
+        _id: item.dishId,
+        restaurant: item.restaurant,
+        available: true,
+      });
+
+      if (!dish) {
+        unavailableDishes.push(item.dishName);
+      }
+    }
+
+    if (unavailableDishes.length > 0) {
+      return res.status(400).json({
+        error: "Some dishes are unavailable.",
+        unavailableDishes,
+      });
+    }
 
     // Process each item and apply offer
     const processedItems = await Promise.all(
       items.map(async (item) => {
         let finalItemPrice = item.price;
-        if (item.offer) {
+        if (item?.offer && item.offer !== null) {
           const offer = await Offer.findById(item.offer);
           if (offer) {
             const itemDiscount = (item.price * offer.discountPercentage) / 100;
@@ -48,36 +68,53 @@ exports.placeOrder = async (req, res) => {
           }
         }
         totalPrice += finalItemPrice * item.quantity;
+        console.log(finalItemPrice,"finalItemPrice");
+        console.log(totalPrice,"totalPrice");
         return {
           ...item,
-          finalItemPrice,
+          totalPrice,
         };
       })
     );
 
     finalPrice = totalPrice;
-
+ 
     // Validate and apply the coupon
-    if (couponCode) {
-      const coupon = await Coupon.findOne({ code: couponCode, isActive: true });
-      if (coupon) {
-        const currentDate = new Date();
-        if (
-          currentDate >= coupon.validFrom &&
-          currentDate <= coupon.validUntil
-        ) {
-          discountAmount = (totalPrice * coupon.discountPercentage) / 100;
-          finalPrice = Math.max(finalPrice - discountAmount, 0);
-          appliedCoupon = { code: coupon.code, discountAmount };
-        } else {
-          return res
-            .status(400)
-            .json({ error: "Coupon is not valid or has expired." });
+if (couponCode) {
+  const coupon = await Coupon.findOne({ code: couponCode, restaurantId: items[0].restaurant });
+  if (coupon) {
+    const currentDate = new Date();
+    if (currentDate >= coupon.validFrom && currentDate <= coupon.validUntil) {
+      if (totalPrice >= coupon.minOrderValue) {
+        let discountAmount=0;
+        if (coupon.discountType === 'Percentage') {
+          discountAmount = (totalPrice * coupon.discountValue) / 100;
+        } else if (coupon.discountType === 'Flat') {
+          discountAmount = coupon.discountValue;
         }
+        else{
+          return res.status(400).json({ error: "Invalid discount type." });
+        }
+        finalPrice = Math.max(finalPrice - discountAmount, 0);
+        appliedCoupon = { code: coupon.code, discountAmount };
+        // Check if the user has already redeemed the coupon
+        if (!coupon.redeemedUsers.includes(customer.user)) {
+          // Mark the coupon as redeemed for the user
+          await Coupon.updateOne({ code: couponCode }, { $push: { redeemedUsers: customer.user } });
+        } else {
+          return res.status(400).json({ error: "You have already redeemed this coupon." });
+        }
+
       } else {
-        return res.status(400).json({ error: "Invalid coupon code." });
+        return res.status(400).json({ error: "Minimum order value not met for this coupon." });
       }
+    } else {
+      return res.status(400).json({ error: "Coupon is not valid or has expired." });
     }
+  } else {
+    return res.status(400).json({ error: "Invalid coupon code or coupon not available for this restaurant." });
+  }
+}
 
     // Apply loyalty points if redeemed
     if (redeemedPoints && redeemedPoints > 0) {
@@ -99,8 +136,8 @@ exports.placeOrder = async (req, res) => {
 
      // Find an available delivery agent
      const availableAgent = await DeliveryAgent.findOneAndUpdate(
-      { isAvailable: true },
-      { isAvailable: false }, // Mark as busy
+      { availabilityStatus: "Available" },
+      { availabilityStatus: "Unavailable" }, // Mark as busy
       { new: true }
     );
 
@@ -110,15 +147,16 @@ exports.placeOrder = async (req, res) => {
         .json({ error: "No delivery agent is available at the moment." });
     }
 
+    
      // Calculate estimated delivery time
-     const travelTime = await calculateDistance(
-      availableAgent.currentLocation, // Agent's location
-      deliveryDetails.address         // Customer's delivery address
-    );
+    //  const travelTime = await calculateDistance(
+    //   availableAgent?.location, // Agent's location
+    //   deliveryDetails?.deliveryAddress         // Customer's delivery address
+    // );
 
     const preparationTime = 10; // Example: 10 minutes for packaging
     const bufferTime = 15; // Example: 15 minutes buffer
-    const estimatedDeliveryTime = travelTime + preparationTime + bufferTime;
+    const estimatedDeliveryTime = 30 + preparationTime + bufferTime;
 
     const newOrder = new Order({
       customer,
@@ -126,13 +164,13 @@ exports.placeOrder = async (req, res) => {
       totalPrice,
       discountedPrice: finalPrice,
       coupon: appliedCoupon,
-      paymentStatus,
+      paymentStatus: "Pending", 
       deliveryDetails,
-      orderStatus,
+      orderStatus: "Placed",
       assignedAgent: {
         id: availableAgent._id,
-        name: availableAgent.name,
-        contact: availableAgent.contact,
+        name: availableAgent?.agent_name,
+        contact: availableAgent?.contact,
       },
       estimatedDeliveryTime: new Date(Date.now() + estimatedDeliveryTime * 60000), // Add minutes to current time
     });

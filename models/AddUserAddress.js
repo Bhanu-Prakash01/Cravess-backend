@@ -18,6 +18,9 @@ const AddNewAddress = new mongoose.Schema({
   },
   addressLine2: {
     type: String,
+  },
+  landmark: {
+    type: String,
     required: true,
   },
   city: {
@@ -33,13 +36,21 @@ const AddNewAddress = new mongoose.Schema({
   //     required: true,
   //   },
   phoneNumber: {
-    type: String,
-  zipCode: {
-    type: String,
+    type: Number,
+  },
+  pincode: {
+    type: Number,
     required: true,
   },
-    required: true,
+  createdAt: {
+    type: Date,
+    default: Date.now
   },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+
 });
 
 module.exports = mongoose.model("userAddresses", AddNewAddress,"userAddresses");

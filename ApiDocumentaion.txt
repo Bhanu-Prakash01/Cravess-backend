@@ -17,7 +17,24 @@ An error response with a m
 
 
 
-
+// Process each item and apply offer
+const processedItems = await Promise.all(
+  items.map(async (item) => {
+    let finalItemPrice = item.price;
+    if (item?.offer && item.offer !== null) {
+      const offer = await Offer.findById(item.offer);
+      if (offer) {
+        const itemDiscount = (item.price * offer.discountPercentage) / 100;
+        finalItemPrice -= itemDiscount;
+      }
+    }
+    totalPrice += finalItemPrice * item.quantity;
+    return {
+      ...item,
+      finalItemPrice,
+    };
+  })
+);
 
 
 

@@ -1,15 +1,27 @@
 const mongoose = require('mongoose');
+const CONSTANTS = require('../constants/constants');
 
 const couponSchema = new mongoose.Schema({
+  restaurantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'restaurantdetails',
+    required: true,
+  },
   code: {
     type: String,
     // required: true,
-    unique: true,
+    // unique: true,
   },
-  discountAmount: {
+  discountType:{
+    type: String,
+    enum: CONSTANTS.ENUM.DISCOUNT_TYPE,
+    required: true,
+  },
+  discountValue: {
     type: Number,
     // required: true,
   },
+  
   minOrderValue: {
     type: Number,
     // required: true,
@@ -24,8 +36,15 @@ const couponSchema = new mongoose.Schema({
   },
   isRedeemed: {
     type: Boolean,
-    default: true,
+    default: false,
   },
+  redeemedUsers: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'users',
+      default: [],
+    },
+  ],
   createdAt: {
     type: Date,
     default: Date.now,
@@ -35,6 +54,8 @@ const couponSchema = new mongoose.Schema({
     default: Date.now,
   }
 });
+
+couponSchema.index({ restaurantId: 1, code: 1 }, { unique: true });
 
 const Coupon = mongoose.model('coupons', couponSchema);
 module.exports = Coupon;

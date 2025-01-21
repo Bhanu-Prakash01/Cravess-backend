@@ -13,6 +13,12 @@ exports.registerUser = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
+    // Check if phone number already exists
+    user = await User.findOne({ phone });
+    if (user) {
+      return res.status(400).json({ message: "Phone number already exists" });
+    }
+
     // Create a new user instance
     user = new User({
       userName,
@@ -44,7 +50,14 @@ exports.registerUser = async (req, res) => {
     user.token = token;
     await user.save();
 
-    res.status(201).json({ token });
+    const userDetails = {
+      id: user.id,
+      email: user.userEmail,
+      role: user.role,
+      token: token,
+    };
+
+    res.status(201).json(userDetails);
   } catch (error) {
     console.error(error.message);
     res.status(500).json({ message: "Server Error" });

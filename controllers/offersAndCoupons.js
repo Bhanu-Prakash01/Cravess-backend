@@ -123,27 +123,47 @@ exports.removeOfferFromDish = async (req, res) => {
 
 exports.createCoupon = async (req, res) => {
   try {
-    const { code, description, discountPercentage, validFrom, validUntil, termsAndConditions } = req.body;
+    const {  restaurantId, code, description, discountType,discountValue, validFrom, validUntil, minOrderValue } = req.body;
 
     const coupon = new Coupon({
+      restaurantId,
       code,
       description,
-      discountPercentage,
+      discountType,
+      discountValue,
       validFrom,
       validUntil,
-      termsAndConditions,
+      minOrderValue,
+      isActive: true,
+      redeemedUsers:[],
     });
 
     await coupon.save();
     res.status(201).json(coupon);
   } catch (error) {
-    res.status(500).json({ message: 'Error creating coupon', error: error.message });
-  }
+    if (error.code === 11000) {
+      res.status(400).json({ message: 'Coupon code already exists for this restaurant' });
+    } else {
+      res.status(500).json({ message: 'Error creating coupon', error: error.message });
+    } 
+   }
 };
 
 exports.getAllCoupons = async (req, res) => {
   try {
     const coupons = await Coupon.find();
+    res.status(200).json(coupons);
+  } catch (error) {
+    res.status(500).json({ message: 'Error retrieving coupons', error: error.message });
+  }
+};
+
+exports.getAllCouponsByRestaurantId = async (req, res) => {
+  try {
+    const coupons = await Coupon.find({ restaurantId: req.params.id });
+    if (!coupons) {
+      return res.status(404).json({ message: 'No coupons found for this restaurant' });
+    }
     res.status(200).json(coupons);
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving coupons', error: error.message });
@@ -164,7 +184,7 @@ exports.getCouponById = async (req, res) => {
 
 exports.updateCoupon = async (req, res) => {
   try {
-    const { code, description, discountPercentage, validFrom, validUntil, termsAndConditions, isActive } = req.body;
+    const { code, description, discountType,discountValue, validFrom, validUntil, minOrderValue, isActive } = req.body;
     const coupon = await Coupon.findById(req.params.id);
     if (!coupon) {
       return res.status(404).json({ message: 'Coupon not found' });
@@ -172,10 +192,11 @@ exports.updateCoupon = async (req, res) => {
 
     coupon.code = code || coupon.code;
     coupon.description = description || coupon.description;
-    coupon.discountPercentage = discountPercentage || coupon.discountPercentage;
+    coupon.discountType = discountType || coupon.discountType;
+    coupon.discountValue = discountValue || coupon.discountValue;
     coupon.validFrom = validFrom || coupon.validFrom;
     coupon.validUntil = validUntil || coupon.validUntil;
-    coupon.termsAndConditions = termsAndConditions || coupon.termsAndConditions;
+    coupon.minOrderValue = minOrderValue || coupon.minOrderValue;
     coupon.isActive = isActive !== undefined ? isActive : coupon.isActive;
     coupon.updatedAt = Date.now();
     await coupon.save();
