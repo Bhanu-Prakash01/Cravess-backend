@@ -1,6 +1,9 @@
 
 const mongoose = require("mongoose");
 const crypto = require("crypto");
+require('dotenv').config();
+const encryptionKey = crypto.createHash('sha256').update(process.env.ENCRYPTION_KEY).digest();
+const iv = crypto.randomBytes(16);  // Generate a random 16-byte IV
 
 const accountDetailsSchema = new mongoose.Schema({
   bankName: {
@@ -52,21 +55,19 @@ const accountDetailsSchema = new mongoose.Schema({
 
 //function is used to encrypt the value
 function encrypt(text) {
-  const cipher = crypto.createCipher("aes-256-cbc", "craves_encryption_key");
-  let encrypted = cipher.update(text, "utf8", "hex");
-  encrypted += cipher.final("hex");
+  const cipher = crypto.createCipheriv('aes-256-cbc', encryptionKey, iv);
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
   return encrypted;
 }
 
-//function is used to decrypt the value
+// Function to decrypt the value
 function decrypt(text) {
-  const decipher = crypto.createDecipher(
-    "aes-256-cbc",
-    "craves_encryption_key"
-  );
-  let decrypted = decipher.update(text, "hex", "utf8");
-  decrypted += decipher.final("utf8");
+  const decipher = crypto.createDecipheriv('aes-256-cbc', encryptionKey, iv);
+  let decrypted = decipher.update(text, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
   return decrypted;
 }
+
 
 module.exports = mongoose.model("accountdetails", accountDetailsSchema);
