@@ -33,7 +33,6 @@ exports.addRestaurantDetails = async (req, res) => {
     closingTime,
     dishTypes
   } = req.body;
-  console.log(req.body);
   const validationError = validateFields(req.body, [
     "restaurantDetails",
     "document",
@@ -50,14 +49,11 @@ exports.addRestaurantDetails = async (req, res) => {
     // Check if the account number already exists
     let savedAccountDetails;
     const existingAccount = await AccountDetails.findOne({ accountNumber: accountDetails.accountNumber });
-    console.log(existingAccount,"existingAccount a");
     if (existingAccount) {
-      console.log(existingAccount,"existingAccount b");
       savedAccountDetails = existingAccount;
     } else {
       // Save new account details
       const newAccountDetails = new AccountDetails(accountDetails);
-      console.log(newAccountDetails,"newAccountDetails");
       savedAccountDetails = await newAccountDetails.save();
     }
     const folderName =  'restaurant-documents';
@@ -237,8 +233,6 @@ exports.updateRestaurantProfile = async (req, res) => {
 
 exports.changeAvailabilityStatus = async (req, res) => {
   const { availabilityStatus } = req.body;
-  console.log(availabilityStatus);
-
   try {
     const restaurantId = req.params.id;
 

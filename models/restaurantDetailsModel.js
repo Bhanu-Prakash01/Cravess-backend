@@ -53,6 +53,16 @@ const restaurantDetailsSchema = new mongoose.Schema({
         enum: CONSTANTS.ENUM.DISH_TYPE,
         // required: true,
     },
+     ratingAndReview: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "RatingAndReview",
+        },
+      ],
+    current_rating: {
+        type: Number,
+        default: 0
+    },
     createdAt: {
         type: Date,
         default: Date.now,

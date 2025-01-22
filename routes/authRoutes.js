@@ -9,8 +9,9 @@ const rateLimit = require("express-rate-limit");
 
 // Rate limit for OTP requests: 5 requests per hour per IP
 const otpRateLimit = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max:1000,
+  // windowMs: 60 * 60 * 1000, // 1 hour
+  windowMs: 60 *  1000,
+  max:100000,
   // max: 5, // Limit each IP to 5 requests per windowMs
   message:
     "Too many OTP requests from this IP, please try again after an hour.",
@@ -18,8 +19,8 @@ const otpRateLimit = rateLimit({
 
 // Rate limit for user authentication requests: 10 requests per hour per IP
 const authRateLimit = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 1000, // Limit each IP to 10 requests per windowMs
+  windowMs: 60 * 1000, // 1 hour
+  max: 100000, // Limit each IP to 10 requests per windowMs
   message:
     "Too many authentication requests from this IP, please try again after an hour.",
 });

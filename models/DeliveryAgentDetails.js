@@ -68,6 +68,10 @@ const deliveryAgentDetailsSchema = new mongoose.Schema({
       ref: "RatingAndReview",
     },
   ],
+  current_rating: {
+    type: Number,
+    default: 0
+},
   gender: {
     type: String,
     enum: CONSTANTS.ENUM.GENDER,

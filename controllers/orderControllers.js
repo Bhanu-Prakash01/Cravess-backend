@@ -68,8 +68,6 @@ exports.placeOrder = async (req, res) => {
           }
         }
         totalPrice += finalItemPrice * item.quantity;
-        console.log(finalItemPrice,"finalItemPrice");
-        console.log(totalPrice,"totalPrice");
         return {
           ...item,
           totalPrice,
@@ -203,8 +201,9 @@ exports.trackOrder = async (req, res) => {
     const orderId = req.params.id;
     const order = await Order.findById(orderId)
       .populate("customer.user")
-      .populate("items.restaurant");
+      .populate("items");
 
+    console.log(order,"order");
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }

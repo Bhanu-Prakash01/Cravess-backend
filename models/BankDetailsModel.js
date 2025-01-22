@@ -55,7 +55,6 @@ function encrypt(text) {
   const cipher = crypto.createCipher("aes-256-cbc", "craves_encryption_key");
   let encrypted = cipher.update(text, "utf8", "hex");
   encrypted += cipher.final("hex");
-  console.log(encrypted,'encrypted');
   return encrypted;
 }
 
@@ -67,7 +66,6 @@ function decrypt(text) {
   );
   let decrypted = decipher.update(text, "hex", "utf8");
   decrypted += decipher.final("utf8");
-  console.log(decrypted,'decrypted');
   return decrypted;
 }
 
