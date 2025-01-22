@@ -108,40 +108,65 @@ exports.userAuth = async (req, res) => {
 };
 
 
+// exports.sendOtp = async (req, res) => {
+//   const { phoneNumber } = req.body;
+//   try {
+//     // Generate a 6-digit numeric OTP
+//     let otp;
+//     let existingOtp;
+
+//     do {
+//       otp='0000'
+//       // otp = otpGenerator.generate(4, {
+//       //   upperCaseAlphabets: false,
+//       //   lowerCaseAlphabets: false,
+//       //   specialChars: false,
+//       //   digits: true,
+//       // });
+//       existingOtp = await OTP.findOne({ otp: otp });
+//     } while (existingOtp);
+
+//     // Create OTP payload
+//     const otpPayload = { phone: phoneNumber, otp };
+//     const otpBody = await OTP.create(otpPayload);
+
+//     // Log the OTP (you might want to remove this in production)
+//     console.log(`OTP sent to ${phoneNumber}: ${otp}`);
+//     // Respond with success
+//     res.status(200).json({
+//       success: true,
+//       message: "OTP Sent Successfully",
+//     });
+//   } catch (err) {
+//     console.error(err);
+//     return res.status(500).json({
+//       message: "Error sending OTP",
+//       success: false,
+//     });
+//   }
+// };
+
 exports.sendOtp = async (req, res) => {
   const { phoneNumber } = req.body;
   try {
-    // Generate a 6-digit numeric OTP
-    let otp;
-    let existingOtp;
-
-    do {
-      otp='0000'
-      // otp = otpGenerator.generate(4, {
-      //   upperCaseAlphabets: false,
-      //   lowerCaseAlphabets: false,
-      //   specialChars: false,
-      //   digits: true,
-      // });
-      existingOtp = await OTP.findOne({ otp: otp });
-    } while (existingOtp);
-
-    // Create OTP payload
-    const otpPayload = { phone: phoneNumber, otp };
+    // Validate phone number
+    if (!phoneNumber || !/^\d{10}$/.test(phoneNumber)) {
+      return res.status(400).json({ error: 'Invalid phone number' });
+    }
+    // Generate OTP
+    const otp = Math.floor(1000 + Math.random() * 9000);
+    console.log(phoneNumber,"phoneNumber");
+    const existingOtp = await OTP.findOne({ phone: phoneNumber });
+    if (existingOtp) {
+      const updatedOtp = await OTP.findByIdAndUpdate(existingOtp._id, { otp, expiresAt: Date.now() + 300000 }, { new: true });
+      return res.status(200).json({ success: true, message: 'OTP updated successfully', data: updatedOtp });
+    }
+    const otpPayload = { phone: phoneNumber, otp, expiresAt: Date.now() + 300000 }; // expires in 5 minutes
     const otpBody = await OTP.create(otpPayload);
-
-    // Log the OTP (you might want to remove this in production)
-    console.log(`OTP sent to ${phoneNumber}: ${otp}`);
-    // Respond with success
-    res.status(200).json({
-      success: true,
-      message: "OTP Sent Successfully",
-    });
+   
+    res.status(200).json({ success: true, message: 'OTP sent successfully', data: otpBody });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({
-      message: "Error sending OTP",
-      success: false,
-    });
+    return res.status(500).json({ error: 'Error sending OTP' });
   }
 };
