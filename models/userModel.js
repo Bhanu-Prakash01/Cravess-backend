@@ -61,9 +61,9 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: [
         "AdminDetails",
-        "DeliveryAgentDetails",
-        "RestaurantDetails",
-        "UserDetails",
+        "deliveryagentdetails",
+        "restaurantdetails",
+        "userdetails",
       ],
     },
     addresses: [

@@ -74,8 +74,14 @@ exports.userAuth = async (req, res) => {
         additionalDetailsData = new RestaurantDetails(additionalDetail);
       } else if  (role === "User") {
         additionalDetailsData = new UserDetails(additionalDetail);
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid role provided.",
+        });
       }
 
+      console.log("Role-specific additional details data:", additionalDetailsData);
       // User doesn't exist, create a new one
       user = new userSchema({
         phone: phoneNumber,
