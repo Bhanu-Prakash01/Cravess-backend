@@ -2,6 +2,8 @@ const express = require("express");
 const mongoose = require("mongoose");
 
 const dotenv = require("dotenv");
+dotenv.config();
+
 const cors = require("cors");
 const userAuth = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
@@ -15,7 +17,6 @@ const ratingAndReview =require('./routes/ratingAndReviewsRoutes')
 const support =require('./routes/supportRoute')
 const discountRoutes=require("./routes/dynamicPricingAndDiscountRoutes")
 const app = express();
-dotenv.config();
 
 const connect = () => {
   mongoose
