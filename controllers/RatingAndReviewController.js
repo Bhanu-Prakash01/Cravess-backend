@@ -3,7 +3,7 @@ const DeliveryAgent = require('../models/DeliveryAgentDetails');
 const Review = require('../models/RatingAndReviewsModel');
 
 exports.createReview = async (req, res) => {
-    const { restaurantId, deliveryAgentId, userId, rating, reviewText } = req.body;
+    const { restaurantId, deliveryAgentId, userId, orderId, rating, reviewText } = req.body;
 
     try {
         // Ensure one of the IDs is provided
@@ -11,9 +11,16 @@ exports.createReview = async (req, res) => {
             return res.status(400).json({ error: 'Either restaurantId or deliveryAgentId must be provided' });
         }
 
+        // Check if a review already exists for the order
+        const existingReview = await Review.findOne({ orderId });
+        if (existingReview) {
+            return res.status(400).json({ error: 'Review already exists for this order' });
+        }
+
         // Create the review
         const newReview = new Review({
             userId,
+            orderId,
             rating,
             reviewText,
         });

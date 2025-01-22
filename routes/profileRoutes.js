@@ -10,15 +10,17 @@ const {
   updateUser,
   getUserById,
   addUserAddress,
+  updateUserAddress,
   getUserAddress,
   getAllAddressByUser,
   deleteAllAddressByUser,
   deleteAddressByUser
 } = require("../controllers/userProfileManagement");
 
-router.put("/updatePreProfileDetails/:id", updateUser);
+router.put("/updateProfileDetails/:id", updateUser);
 router.get("/getUserById/:id", getUserById);
 router.post("/addUserAddress", addUserAddress);
+router.put("/updateUserAddress/:addressId", updateUserAddress);
 router.get("/getUserAddress/:userId/:addressId", getUserAddress);
 router.get("/getAllAddressByUser/:id", getAllAddressByUser);
 router.delete("/deleteAllAddressByUser/:id", deleteAllAddressByUser);

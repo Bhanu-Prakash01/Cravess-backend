@@ -3,25 +3,16 @@ const UserAddresses = require("../models/AddUserAddress");
 exports.updateUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    // Find user by ID
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    // Use object destructuring to update only provided fields
-    const { email, userName, addressLine1, city, country, addressLine2 } =
-      req.body;
-    // Update user details if provided, or retain current values
+    const { email, userName, phoneNumber } = req.body;
     user.email = email;
     user.userName = userName;
-    user.addressLine1 = addressLine1;
-    user.city = city;
-    user.country = country;
-    user.addressLine2 = addressLine2;
-    // Save the updated user
+    user.phoneNumber = phoneNumber;
+
     const updatedUser = await user.save();
-    console.log(updatedUser, "user", user);
-    // Respond with the updated user details
     res.json({ message: "User updated successfully", user: updatedUser });
   } catch (err) {
     console.error(err);
@@ -83,22 +74,20 @@ exports.addUserAddress = async (req, res) => {
 
 exports.updateUserAddress = async (req, res) => {
   try {
-    const userId = req.params.userId;
     const addressId = req.params.addressId;
+    const { userId, name, phoneNumber, addressLine1, addressLine2, landmark, city, state, pincode } = req.body;
+
     // Find the user by their ID
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
     // Find the address by its ID
-    const address = user.addresses.find(
-      (address) => address.toString() === addressId 
-    );
+    const address = await UserAddresses.findById(addressId);
     if (!address) {
       return res.status(404).json({ message: "Address not found" });
     }
     // Use object destructuring to update only provided fields
-    const { name, phoneNumber, addressLine1, addressLine2, landmark, city, state, pincode } = req.body;
     // Update address details if provided, or retain current values
     address.name = name;
     address.phoneNumber = phoneNumber;
