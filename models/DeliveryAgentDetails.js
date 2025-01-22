@@ -2,23 +2,13 @@ const mongoose = require("mongoose");
 const CONSTANTS = require("../constants/constants");
 
 const deliveryAgentDetailsSchema = new mongoose.Schema({
-  // vehicleDetails: {
-  //   type: {
-  //     vehicleType: String,
-  //     vehicleNumber: String,
-  //     vehicleModel: String,
-  //   },
-  //   // required: true,
-  // },
+ 
   agent_name: String,
   t_shirt_size:{
     type: String,    
     enum:CONSTANTS.ENUM.T_SHIRT_SIZE ,
   },
   vehicleDetails: {
-    // vehicleType: String,
-    //   vehicleNumber: String,
-    //   vehicleModel: String,
     vehicle_type: String,
     vehicle_number: String,
     vehicle_owner_name: String,

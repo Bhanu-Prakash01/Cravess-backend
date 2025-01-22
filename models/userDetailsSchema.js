@@ -6,4 +6,4 @@ const userDetailsSchema = new mongoose.Schema({
   loyaltyPoints: Number,
 });
 
-module.exports = mongoose.model("UserDetails", userDetailsSchema);
+module.exports = mongoose.model("userdetails", userDetailsSchema);
