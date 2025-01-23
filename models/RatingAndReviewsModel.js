@@ -11,6 +11,14 @@ const ratingAndReviewSchema = new mongoose.Schema({
 		required: true,
 		ref: "Order",
 	  },
+	  restaurantId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "RestaurantDetails", // Reference to the restaurant being reviewed
+    },
+    deliveryAgentId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "DeliveryAgent", // Reference to the delivery agent being reviewed
+    },
 	rating: {
 		type: Number,
 		required: true,

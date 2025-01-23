@@ -40,6 +40,7 @@ exports.addUserAddress = async (req, res) => {
   try {
     const {userId, name,phoneNumber, addressLine1, addressLine2, landmark, city, state, pincode } = req.body;
     const user = await User.findById(userId);
+    
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }

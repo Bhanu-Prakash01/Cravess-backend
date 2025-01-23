@@ -8,6 +8,7 @@ const Coupon = require("../models/CouponSchema")
 const Dish = require("../models/dishSchema");
 const calculateDistance = require("../Utils/CalculateDistance");
 const DeliveryAgent = require("../models/DeliveryAgentDetails");
+const CONSTANTS = require("../constants/constants");
 
 const getUserPoints = async (userId) => {
   try {
@@ -202,12 +203,9 @@ exports.trackOrder = async (req, res) => {
     const order = await Order.findById(orderId)
       .populate("customer.user")
       .populate("items");
-
-    console.log(order,"order");
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
-
     res.json(order);
   } catch (error) {
     console.error("Error tracking order:", error);
@@ -230,19 +228,112 @@ exports.updateOrder = async (req, res) => {
   }
 };
 
+// exports.cancelOrder = async (req, res) => {
+//   try {
+//     const orderId = req.params.id;
+//     // console.log(orderId);
+
+//     const order = await Order.findByIdAndDelete(orderId);
+
+//     if (!order) {
+//       return res.status(404).json({ error: "Order not found" });
+//     }
+
+//     res.json({ message: "Order deleted successfully" });
+//   } catch (error) {
+//     res.status(400).json({ error: error.message });
+//   }
+// };
+
 exports.cancelOrder = async (req, res) => {
   try {
+    const {userId} = req.body;
+    console.log(userId,"userId");
     const orderId = req.params.id;
-    // console.log(orderId);
-
-    const order = await Order.findByIdAndDelete(orderId);
+    const order = await Order.findById(orderId);
 
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
+    const user = await User.findById(userId);
+    console.log(user);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    const currentTime = new Date();
+    const orderCreationTime = order.createdAt;
 
-    res.json({ message: "Order deleted successfully" });
+    // Check if user is trying to cancel within 120 seconds
+    if (user.role === 'User' && (currentTime - orderCreationTime) / 1000 > 120) {
+      return res.status(403).json({ error: "Order cancellation time has expired" });
+    }
+
+    // Check if restaurant is trying to cancel within 15 minutes
+    if (user.role === 'Restaurant' && (currentTime - orderCreationTime) / 60000 > 15) {
+      return res.status(403).json({ error: "Order cancellation time has expired" });
+    }
+
+    await Order.findByIdAndDelete(orderId);
+    res.json({ message: "Order Cancelled successfully" });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
+
+// exports.cancelOrder = async (req, res) => {
+//   try {
+//     const { userId } = req.body;
+//     const orderId = req.params.id;
+
+//     // Fetch the order using the orderId
+//     const order = await Order.findById(orderId);
+//     if (!order) {
+//       return res.status(404).json({ error: "Order not found" });
+//     }
+
+//     // Fetch the user using the userId
+//     const user = await User.findById(userId).populate('additionalDetail');
+//     if (!user) {
+//       return res.status(404).json({ error: "User not found" });
+//     }
+
+//     const currentTime = new Date();
+//     const orderCreationTime = order.createdAt;
+
+//     // Check if the user is a regular User and validate cancellation time
+//     if (user.role === "User") {
+//       if (!user._id.equals(order.customer.user)) {
+//         return res.status(403).json({ error: "Unauthorized cancellation attempt" });
+//       }
+
+//       // Ensure cancellation is within 120 seconds
+//       if ((currentTime - orderCreationTime) / 1000 > 120) {
+//         return res
+//           .status(403)
+//           .json({ error: "Order cancellation time has expired" });
+//       }
+//     }
+
+//     // Check if the user is a Restaurant and validate cancellation time
+//     if (user.role === "Restaurant") {
+//       if (!user.additionalDetail || !user.additionalDetail._id.equals(order.restaurant)) {
+//         return res.status(403).json({ error: "Unauthorized cancellation attempt" });
+//       }
+
+//       // Ensure cancellation is within 15 minutes
+//       if ((currentTime - orderCreationTime) / 60000 > 15) {
+//         return res
+//           .status(403)
+//           .json({ error: "Order cancellation time has expired" });
+//       }
+//     }
+
+//     // Cancel the order by deleting it
+//     await Order.findByIdAndDelete(orderId);
+
+//     res.json({ message: "Order cancelled successfully" });
+//   } catch (error) {
+//     res.status(400).json({ error: error.message });
+//   }
+// };

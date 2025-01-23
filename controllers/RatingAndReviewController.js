@@ -33,32 +33,49 @@ exports.createReview = async (req, res) => {
             orderId,
             rating,
             reviewText,
+            restaurantId,
+            deliveryAgentId
         });
 
-        await newReview.save();
-        const restaurantRatings = await Review.find({ restaurantId: restaurantId });
-        const restaurantRatingSum = restaurantRatings.reduce((acc, review) => acc + review.rating, 0);
-        const averageRestaurantRating = restaurantRatingSum / restaurantRatings.length;
-
-        const deliveryAgentRatings = await Review.find({ deliveryAgentId: deliveryAgentId });
-        const deliveryAgentRatingSum = deliveryAgentRatings.reduce((acc, review) => acc + review.rating, 0);
-        const averageDeliveryAgentRating = deliveryAgentRatingSum / deliveryAgentRatings.length;
+       
         try {
-            // Determine where to push the reviewId
+            // Handle restaurant rating
             if (restaurantId) {
+                const restaurantRatings = await RestaurantDetails.findOne({ _id: restaurantId });
+                const ratings = restaurantRatings.ratingAndReview;
+                console.log(ratings,"ratings",ratings.length, "ratings.length");
+                const isFirstRestaurantRating = ratings?.length < 1; // **Check if it's the first review**
+                const averageRestaurantRating = isFirstRestaurantRating
+                    ? rating // First review sets the current rating directly
+                    : ratings?.reduce((acc, review) => acc + review.rating, 0) / ratings?.length;
+                console.log(averageRestaurantRating,"averageRestaurantRating");
                 await RestaurantDetails.findByIdAndUpdate(
                     restaurantId,
-                    { $set: { current_rating: averageRestaurantRating } },
-                    { $push: { ratingAndReview: newReview._id } },
+                    {
+                        $set: { current_rating: averageRestaurantRating },
+                      $push: { ratingAndReview: { _id: newReview._id, rating } },
+                    },
                     { new: true }
                 );
             }
 
+            // Handle delivery agent rating
             if (deliveryAgentId) {
+                console.log(deliveryAgentId,"deliveryAgentId");
+                const deliveryAgentRatings = await DeliveryAgent.findOne({_id: deliveryAgentId });
+                const ratings = deliveryAgentRatings.ratingAndReview;
+                console.log(ratings,"ratings");
+                const isFirstDeliveryAgentRating = ratings?.length < 1; // **Check if it's the first review**
+                const averageDeliveryAgentRating = isFirstDeliveryAgentRating
+                    ? rating // First review sets the current rating directly
+                    : ratings?.reduce((acc, review) => acc + review.rating, 0) / ratings?.length;
+                console.log(averageDeliveryAgentRating,"averageDeliveryAgentRating");
                 await DeliveryAgent.findByIdAndUpdate(
                     deliveryAgentId,
-                    { $set: { current_rating: averageDeliveryAgentRating } },
-                    { $push: { ratingAndReview: newReview._id } },
+                    {
+                        $set: { current_rating: averageDeliveryAgentRating },
+                        $push: { ratingAndReview: { _id: newReview._id, rating } },
+                    },
                     { new: true }
                 );
             }
@@ -67,7 +84,7 @@ exports.createReview = async (req, res) => {
             return res.status(500).json({ error: 'Error updating restaurant or delivery agent document' });
         }
 
-
+        await newReview.save();
         res.status(201).json({ message: 'Review created and added successfully', review: newReview });
     } catch (error) {
         res.status(500).json({ error: 'An error occurred while processing the request', details: error.message });
