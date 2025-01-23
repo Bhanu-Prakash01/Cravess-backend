@@ -53,15 +53,23 @@ const restaurantDetailsSchema = new mongoose.Schema({
         enum: CONSTANTS.ENUM.DISH_TYPE,
         // required: true,
     },
-     ratingAndReview: [
+    ratingAndReview: [
         {
           type: mongoose.Schema.Types.ObjectId,
           ref: "RatingAndReview",
-        },
+          rating: { type: Number, required: true },
+        }
       ],
+      
     current_rating: {
         type: Number,
-        default: 0
+        default: 0,
+        validate: {
+            validator: function (value) {
+              return !isNaN(value); // Ensure the value is not NaN
+            },
+            message: "Invalid value for current_rating. Must be a valid number.",
+          },
     },
     createdAt: {
         type: Date,
