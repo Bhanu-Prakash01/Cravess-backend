@@ -51,6 +51,8 @@ exports.registerUser = async (req, res) => {
     await user.save();
 
     const userDetails = {
+      success: true,
+      message: "User registered successfully",
       id: user.id,
       email: user.userEmail,
       role: user.role,

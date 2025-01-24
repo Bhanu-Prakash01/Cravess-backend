@@ -85,7 +85,7 @@ exports.CreateSupportTicket = async (req, res) => {
       assignedAgent: assignedAgent._id,
     });
     const savedTicket = await newTicket.save();
-    res.status(201).json(savedTicket);
+    res.status(201).json({success: true, message: "Ticket created successfully", data: savedTicket});
   } catch (error) {
     res.status(500).json({ message: "Error creating ticket", error });
   }
@@ -107,7 +107,7 @@ exports.GetAllSupportTickets = async (req, res) => {
       .limit(10) // limit to 10 tickets per page
       .skip((req.query.page - 1) * 10); // skip to the current page
 
-    res.status(200).json(supportTickets);
+    res.status(200).json({success: true, message: "Support tickets fetched successfully", data: supportTickets});
   } catch (error) {
     res.status(500).json({ message: "Error fetching support tickets", error });
   }
@@ -139,7 +139,7 @@ exports.updateResolution = async (req, res) => {
   
       await supportTicket.save();
 
-      res.status(200).json({ message: "Resolution updated successfully" });
+      res.status(200).json({success: true, message: "Resolution updated successfully" });
     } catch (error) {
       res.status(500).json({ message: "Error updating resolution", error });
     }
@@ -167,7 +167,7 @@ exports.updateResolution = async (req, res) => {
   
       await supportTicket.save();
   
-      res.json({ message: 'Support ticket status updated to Resolved' });
+      res.status(200).json({success: true, message: 'Support ticket status updated to Resolved' });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: 'Error updating support ticket status' });

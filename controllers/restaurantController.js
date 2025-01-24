@@ -111,6 +111,7 @@ user.additionalDetail = {
 
     await user.save();
     res.status(201).json({
+      success: true,
       message: "Restaurant Details created successfully",
       data: savedRestaurant,
     });
@@ -127,7 +128,7 @@ exports.getRestaurantDetailsById = async (req, res) => {
     if (!restaurant) {
       return res.status(404).json({ error: "Restaurant not found" });
     }
-    res.status(200).json({ data: restaurant });
+    res.status(200).json({success: true, message: "Restaurant details fetched successfully", data: restaurant });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -223,6 +224,7 @@ exports.updateRestaurantProfile = async (req, res) => {
     const savedRestaurant = await restaurant.save();
 
     res.status(200).json({
+      success: true,
       message: "Restaurant profile updated successfully",
       data: savedRestaurant,
     });
@@ -254,7 +256,7 @@ exports.changeAvailabilityStatus = async (req, res) => {
     await restaurant.save();
 
     // Send a success response
-    res.status(200).json({ message: 'Availability status updated successfully', restaurant });
+    res.status(200).json({ success: true, message: 'Availability status updated successfully', data: restaurant });
   } catch (error) {
     console.error('Error updating availability status:', error);
     res.status(500).json({ message: 'An error occurred while updating the availability status' });
@@ -264,7 +266,7 @@ exports.changeAvailabilityStatus = async (req, res) => {
 exports.getAllRestaurants = async (req, res) => {
   try {
     const restaurants = await RestaurantDetails.find();
-    res.status(200).json(restaurants);
+    res.status(200).json({ success: true, message: 'Restaurants fetched successfully', data: restaurants});
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -285,7 +287,7 @@ exports.addDish = async (req, res) => {
       });
 
       await newDish.save();
-      res.status(201).json({ message: 'Dish created successfully', dish: newDish });
+      res.status(201).json({ success: true, message: 'Dish created successfully', data: newDish });
   } catch (err) {
       res.status(500).json({ error: err.message });
   }
@@ -296,8 +298,8 @@ exports.getDishesByRestaurant = async (req, res) => {
   const { restaurantId } = req.params;
 
   try {
-      const dishes = await Dish.find({ restaurant: restaurantId });
-      res.status(200).json(dishes);
+      const dishes = await Dish.find(restaurantId);
+      res.status(200).json({ success: true, message: 'Dishes fetched successfully',data: dishes});
   } catch (err) {
       res.status(500).json({ error: err.message });
   }
@@ -307,7 +309,7 @@ exports.deleteDishesById = async (req, res) => {
   const { id } = req.params;
   try {
       await Dish.findByIdAndDelete(id);
-      res.status(200).json({ message: 'Dish deleted successfully' });
+      res.status(200).json({ success: true, message: 'Dish deleted successfully' });
   } catch (err) {
       res.status(500).json({ error: err.message });
   }
@@ -316,7 +318,7 @@ exports.deleteDishesById = async (req, res) => {
 exports.getAllDishes = async (req, res) => {
   try {
       const dishes = await Dish.find();
-      res.status(200).json(dishes);
+      res.status(200).json({ success: true, message: 'Dishes fetched successfully', data: dishes });
   } catch (err) {
       res.status(500).json({ error: err.message });
   }

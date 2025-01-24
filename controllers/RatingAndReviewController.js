@@ -85,7 +85,7 @@ exports.createReview = async (req, res) => {
         }
 
         await newReview.save();
-        res.status(201).json({ message: 'Review created and added successfully', review: newReview });
+        res.status(201).json({success: true,  message: 'Review created and added successfully', data: newReview });
     } catch (error) {
         res.status(500).json({ error: 'An error occurred while processing the request', details: error.message });
     }
