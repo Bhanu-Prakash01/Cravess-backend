@@ -27,6 +27,14 @@ const dishSchema = new mongoose.Schema({
         enum: CONSTANTS.ENUM.DISH_TYPE,
         required: true,
     },
+    category: {
+        type: String,
+        enum: CONSTANTS.ENUM.DISH_CATEGORY,
+        required: true,
+    },
+    image: {
+        type: String,
+    },
     createdAt: {
         type: Date,
         default: Date.now,
