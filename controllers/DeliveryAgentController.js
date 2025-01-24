@@ -134,6 +134,7 @@ exports.createDeliveryAgent = async (req, res) => {
     await user.save();
 
     res.status(201).json({
+      success: true,
       message: "Delivery agent created successfully",
       data: savedAgent,
     });
@@ -150,7 +151,7 @@ exports.getDeliveryAgentDetailsById = async (req, res) => {
       if (!agent) {
         return res.status(404).json({ error: "Delivery agent not found" });
       }
-      res.status(200).json({ data: agent });
+      res.status(200).json({success: true, message: "Delivery agent details fetched successfully", data: agent });
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
@@ -218,6 +219,7 @@ exports.getDeliveryAgentDetailsById = async (req, res) => {
       const savedAgent = await agent.save();
   
       res.status(200).json({
+        success: true,
         message: "Delivery agent profile updated successfully",
         data: savedAgent,
       });

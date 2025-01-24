@@ -182,15 +182,17 @@ if (couponCode) {
         finalPrice
       );
       res.status(201).json({
+        success: true,
         message:
           "Order placed successfully, discounts applied, and points awarded.",
-        order: newOrder,
+        data: newOrder,
         points: result.points,
       });
     } else {
       res.status(201).json({
+        success: true,
         message: "Order placed successfully and discounts applied.",
-        order: newOrder,
+        data: newOrder,
       });
     }
   } catch (err) {
@@ -206,7 +208,7 @@ exports.trackOrder = async (req, res) => {
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
-    res.json(order);
+    res.status(200).json({ success: true, message: "Order tracked successfully", data: order});
   } catch (error) {
     console.error("Error tracking order:", error);
     res.status(400).json({ error: error.message });
@@ -222,7 +224,7 @@ exports.updateOrder = async (req, res) => {
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
-    res.json(order);
+    res.status(200).json({ success: true, message: "Order updated successfully", data: order});
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -275,7 +277,7 @@ exports.cancelOrder = async (req, res) => {
     }
 
     await Order.findByIdAndDelete(orderId);
-    res.json({ message: "Order Cancelled successfully" });
+    res.status(200).json({ success: true,message: "Order Cancelled successfully" });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

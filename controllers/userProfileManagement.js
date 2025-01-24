@@ -13,7 +13,7 @@ exports.updateUser = async (req, res) => {
     user.phoneNumber = phoneNumber;
 
     const updatedUser = await user.save();
-    res.json({ message: "User updated successfully", user: updatedUser });
+    res.json({ success: true, message: "User updated successfully", data: updatedUser });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error updating user" });
@@ -29,7 +29,7 @@ exports.getUserById = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.json({ user });
+    res.status(200).json({ success: true, message: "User fetched successfully", data: user });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error fetching user details" });
@@ -66,7 +66,7 @@ exports.addUserAddress = async (req, res) => {
     await user.save();
     res
       .status(201)
-      .json({ message: "Address added successfully", address: newAddress });
+      .json({ success: true, message: "Address added successfully", data: newAddress });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error adding address" });
@@ -101,7 +101,7 @@ exports.updateUserAddress = async (req, res) => {
     // Save the updated address
     const updatedAddress = await address.save();
     // Respond with the updated address details
-    res.json({ message: "Address updated successfully", address: updatedAddress });
+    res.status(200).json({ success: true, message: "Address updated successfully", data: updatedAddress });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error updating address" });
@@ -125,7 +125,7 @@ exports.getUserAddress = async (req, res) => {
       return res.status(404).json({ message: "Address not found" });
     }
     const addresses = await UserAddresses.find({ _id: { $in: address } });
-    res.json({ address: addresses });
+    res.status(200).json({ success: true, message: "Address fetched successfully", data: addresses });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error fetching address details" });
@@ -142,7 +142,7 @@ exports.getAllAddressByUser = async (req, res) => {
     }
     // Fetch the addresses from the userAddress collection
     const addresses = await UserAddresses.find({ _id: { $in: user.addresses } });
-    res.json({ address: addresses });
+    res.status(200).json({ success: true, message: "Addresses fetched successfully", data: addresses });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error fetching address details" });
@@ -160,7 +160,7 @@ exports.deleteAllAddressByUser = async (req, res) => {
     
     user.addresses = [];
     await user.save();
-    res.json({ message: "All addresses deleted successfully" });
+    res.status(200).json({success: true, message: "All addresses deleted successfully" });
   } catch (err) {
     console.error(err); 
     res.status(500).json({ message: "Error deleting address" });
@@ -186,7 +186,7 @@ exports.deleteAddressByUser = async(req, res) => {
     }
     user.addresses.pull(address);
     await user.save();
-    res.json({ message: "Address deleted successfully" });
+    res.status(200).json({ success: true, message: "Address deleted successfully" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error deleting address" });

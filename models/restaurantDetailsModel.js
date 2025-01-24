@@ -55,12 +55,13 @@ const restaurantDetailsSchema = new mongoose.Schema({
     },
     ratingAndReview: [
         {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "RatingAndReview",
+          review: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "RatingAndReview",
+          },
           rating: { type: Number, required: true },
-        }
+        },
       ],
-      
     current_rating: {
         type: Number,
         default: 0,

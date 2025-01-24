@@ -46,7 +46,7 @@ exports.createOffer = async (req, res) => {
     });
 
     await offer.save();
-    res.status(201).json(offer);
+    res.status(201).json({success: true, message: "Offer created successfully", data: offer});
   } catch (error) {
     res
       .status(500)
@@ -109,7 +109,7 @@ exports.removeOfferFromDish = async (req, res) => {
     offer.dishes.pull(dishId);
     await offer.save();
 
-    res.status(200).json(offer);
+    res.status(200).json({ success: true, message: "Offer removed from dish", data: offer});
   } catch (error) {
     res
       .status(500)
