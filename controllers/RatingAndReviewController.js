@@ -43,12 +43,10 @@ exports.createReview = async (req, res) => {
             if (restaurantId) {
                 const restaurantRatings = await RestaurantDetails.findOne({ _id: restaurantId });
                 const ratings = restaurantRatings.ratingAndReview;
-                console.log(ratings,"ratings",ratings.length, "ratings.length");
                 const isFirstRestaurantRating = ratings?.length < 1; // **Check if it's the first review**
                 const averageRestaurantRating = isFirstRestaurantRating
                     ? rating // First review sets the current rating directly
-                    : ratings?.reduce((acc, review) => acc + review.rating, 0) / ratings?.length;
-                console.log(averageRestaurantRating,"averageRestaurantRating");
+                    : (ratings?.reduce((acc, review) => acc + review.rating, 0) + rating) / (ratings?.length + 1);
                 await RestaurantDetails.findByIdAndUpdate(
                     restaurantId,
                     {
@@ -61,15 +59,12 @@ exports.createReview = async (req, res) => {
 
             // Handle delivery agent rating
             if (deliveryAgentId) {
-                console.log(deliveryAgentId,"deliveryAgentId");
                 const deliveryAgentRatings = await DeliveryAgent.findOne({_id: deliveryAgentId });
                 const ratings = deliveryAgentRatings.ratingAndReview;
-                console.log(ratings,"ratings");
                 const isFirstDeliveryAgentRating = ratings?.length < 1; // **Check if it's the first review**
                 const averageDeliveryAgentRating = isFirstDeliveryAgentRating
                     ? rating // First review sets the current rating directly
-                    : ratings?.reduce((acc, review) => acc + review.rating, 0) / ratings?.length;
-                console.log(averageDeliveryAgentRating,"averageDeliveryAgentRating");
+                    : (ratings?.reduce((acc, review) => acc + review.rating, 0) + rating) / (ratings?.length + 1);
                 await DeliveryAgent.findByIdAndUpdate(
                     deliveryAgentId,
                     {
@@ -77,6 +72,7 @@ exports.createReview = async (req, res) => {
                         $push: { ratingAndReview: { _id: newReview._id, rating } },
                     },
                     { new: true }
+
                 );
             }
         } catch (error) {
