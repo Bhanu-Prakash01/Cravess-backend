@@ -274,7 +274,7 @@ exports.getAllRestaurants = async (req, res) => {
 
 // Add a new dish
 exports.addDish = async (req, res) => {
-  const { restaurant, dishName, price, description, available, dishType } = req.body;
+  const { restaurant, dishName, price, description, available, dishType, category } = req.body;
 
   try {
       const newDish = new Dish({
@@ -284,6 +284,7 @@ exports.addDish = async (req, res) => {
           description,
           available,
           dishType,
+          category
       });
 
       await newDish.save();
@@ -298,7 +299,7 @@ exports.getDishesByRestaurant = async (req, res) => {
   const { restaurantId } = req.params;
 
   try {
-      const dishes = await Dish.find(restaurantId);
+      const dishes = await Dish.find({restaurant:restaurantId});
       res.status(200).json({ success: true, message: 'Dishes fetched successfully',data: dishes});
   } catch (err) {
       res.status(500).json({ error: err.message });
@@ -316,8 +317,17 @@ exports.deleteDishesById = async (req, res) => {
 };
 
 exports.getAllDishes = async (req, res) => {
+  const { category, dishName, dishType } = req.query;
   try {
-      const dishes = await Dish.find();
+      // const dishes = await Dish.find();
+      const dishes = await Dish.find({
+        $and: [
+          { category: category ? category : { $exists: true } },
+          { dishName: dishName ? { $regex: dishName, $options: 'i' } : { $exists: true } },
+          { dishType: dishType ? dishType : { $exists: true } },
+        ],
+      });
+  
       res.status(200).json({ success: true, message: 'Dishes fetched successfully', data: dishes });
   } catch (err) {
       res.status(500).json({ error: err.message });
