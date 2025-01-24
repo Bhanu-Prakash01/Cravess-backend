@@ -12,7 +12,9 @@ const {
   getDishesByRestaurant,
   getAllDishes,
   getAllRestaurants,
-  deleteDishesById
+  deleteDishesById,
+  addFavouriteDish,
+  addFavouriteRestaurant,
 } = require("../controllers/restaurantController");
 
 // Route to get a restaurant
@@ -39,6 +41,8 @@ router.get("/getAllDishes",getAllDishes);
 
 router.delete("/deleteDishes/:id", deleteDishesById);
 
+router.post("/addFavouriteDish",addFavouriteDish);
 
+router.post("/addFavouriteRestaurant",addFavouriteRestaurant);
 
 module.exports = router;

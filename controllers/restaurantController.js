@@ -1,5 +1,6 @@
 const RestaurantDetails = require("../models/restaurantDetailsModel");
 const AccountDetails = require("../models/BankDetailsModel");
+const UserDetails = require("../models/userDetailsSchema");
 const User = require("../models/userModel");
 const Dish = require("../models/dishSchema")
 const { uploadDocuments } = require("../Utils/Cloudinary");// Helper function to validate required fields
@@ -297,9 +298,14 @@ exports.addDish = async (req, res) => {
 // Fetch all dishes for a specific restaurant
 exports.getDishesByRestaurant = async (req, res) => {
   const { restaurantId } = req.params;
-
+  const { category } = req.query;
   try {
-      const dishes = await Dish.find({restaurant:restaurantId});
+      const dishes = await Dish.find({
+        $and: [
+          { restaurant: restaurantId },
+          { category: category ? category : { $exists: true } },
+        ],
+      });
       res.status(200).json({ success: true, message: 'Dishes fetched successfully',data: dishes});
   } catch (err) {
       res.status(500).json({ error: err.message });
@@ -331,5 +337,98 @@ exports.getAllDishes = async (req, res) => {
       res.status(200).json({ success: true, message: 'Dishes fetched successfully', data: dishes });
   } catch (err) {
       res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.addFavouriteDish = async (req, res) => {
+  const { dishId } = req.body;
+  const { userId } = req.params;
+
+  try {
+    // Find the user by ID
+    const user = await User.findById(userId).populate("additionalDetail");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Ensure the user has a "UserDetails" additionalDetail
+    if (!user.additionalDetail || user.additionalDetailModel !== "UserDetails") {
+      return res.status(400).json({ message: "User details not available for this user" });
+    }
+
+    // Find the dish
+    const dish = await Dish.findById(dishId);
+    if (!dish) {
+      return res.status(404).json({ message: "Dish not found" });
+    }
+
+    // Add the dish to favoriteDishes
+    const userDetails = await UserDetails.findById(user.additionalDetail);
+    if (!userDetails.favoriteDishes.includes(dishId)) {
+      userDetails.favoriteDishes.push(dishId);
+      await userDetails.save();
+    }
+
+    res.status(200).json({ success: true, message: "Dish added to favourites" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+// exports.addFavouriteRestaurant = async (req, res) => {
+//   const { restaurantId } = req.body;
+//   const { userId } = req.params;
+//   try {
+//       const user = await User.findById(userId);
+//       if (!user) {
+//           return res.status(404).json({ message: 'User not found' });
+//       }
+//       const restaurant = await RestaurantDetails.findById(restaurantId);
+//       if (!restaurant) {
+//           return res.status(404).json({ message: 'Restaurant not found' });
+//       }
+//       user.favoriteRestaurants.push(restaurantId);
+//       await user.save();
+//       res.status(200).json({ success: true, message: 'Restaurant added to favourites' });
+//   } catch (err) {
+//       res.status(500).json({ error: err.message });
+//   }
+// };
+
+// Add Favorite Restaurant
+exports.addFavouriteRestaurant = async (req, res) => {
+  const { restaurantId } = req.body;
+  const { userId } = req.params;
+
+  try {
+    // Find the user by ID
+    const user = await User.findById(userId).populate("additionalDetail");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Ensure the user has a "UserDetails" additionalDetail
+    if (!user.additionalDetail || user.additionalDetailModel !== "UserDetails") {
+      return res.status(400).json({ message: "User details not available for this user" });
+    }
+
+    // Find the restaurant
+    const restaurant = await RestaurantDetails.findById(restaurantId);
+    if (!restaurant) {
+      return res.status(404).json({ message: "Restaurant not found" });
+    }
+
+    // Add the restaurant to favoriteRestaurants
+    const userDetails = await UserDetails.findById(user.additionalDetail);
+    if (!userDetails.favoriteRestaurants.includes(restaurantId)) {
+      userDetails.favoriteRestaurants.push(restaurantId);
+      await userDetails.save();
+    }
+
+    res.status(200).json({ success: true, message: "Restaurant added to favourites" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
