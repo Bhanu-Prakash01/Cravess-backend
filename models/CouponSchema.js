@@ -4,7 +4,7 @@ const CONSTANTS = require('../constants/constants');
 const couponSchema = new mongoose.Schema({
   restaurantId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'restaurantdetails',
+    ref: 'RestaurantDetails',
     required: true,
   },
   code: {

@@ -120,6 +120,7 @@ const deliveryAgentDetailsSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model(
-  "deliveryagentdetails",
+  "DeliveryAgentDetails",
   deliveryAgentDetailsSchema,
+  "DeliveryAgentDetails"
 );
