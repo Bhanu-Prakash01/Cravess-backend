@@ -358,13 +358,11 @@ exports.addToCart = async (req, res) => {
   try {
     const { userId, dishId } = req.body;
 
-    // Validate user existence
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Validate dish existence
     const dish = await Dish.findById(dishId);
     if (!dish) {
       return res.status(404).json({ error: "Dish not found" });
@@ -373,16 +371,15 @@ exports.addToCart = async (req, res) => {
     // Get or create cart
     let cart = await Cart.findOne({ user: userId });
     if (!cart) {
-      // Create a new cart if it doesn't exist
       cart = new Cart({
         user: userId,
         items: [
           {
             dishId: dishId,
             quantity: 1,
-            price: dish.price, // Assuming `price` is a field in the `Dish` schema
-            dishName: dish.dishName, // Assuming `dishName` is a field in the `Dish` schema
-            restaurant: dish.restaurant, // Assuming `restaurant` is a field in the `Dish` schema
+            price: dish.price,
+            dishName: dish.dishName, 
+            restaurant: dish.restaurant,
           },
         ],
       });
@@ -399,20 +396,16 @@ exports.addToCart = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Your cart contains items from a different restaurant. Do you want to switch?",
-        conflict: true, // Indicating the need for user confirmation
+        conflict: true,
       });
     }
-
-    // Check if dish already exists in cart
     const existingItemIndex = cart.items.findIndex(
       (item) => item.dishId.toString() === dishId
     );
 
     if (existingItemIndex !== -1) {
-      // If the dish is already in the cart, increase the quantity
       cart.items[existingItemIndex].quantity += 1;
     } else {
-      // If the dish is not in the cart, add it
       cart.items.push({
         dishId: dishId,
         quantity: 1,
@@ -423,7 +416,7 @@ exports.addToCart = async (req, res) => {
     }
 
     await cart.save();
-    res.status(200).json({ success: true, message: "Dish added to cart successfully" });
+    res.status(200).json({ success: true, message: "Dish added to cart successfully", data: cart });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -433,25 +426,21 @@ exports.switchRestaurant = async (req, res) => {
   try {
     const { userId, dishId } = req.body;
 
-    // Validate user existence
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Validate dish existence
     const dish = await Dish.findById(dishId);
     if (!dish) {
       return res.status(404).json({ error: "Dish not found" });
     }
 
-    // Get the user's cart
     let cart = await Cart.findOne({ user: userId });
     if (!cart) {
       return res.status(404).json({ error: "Cart not found" });
     }
 
-    // Clear the current cart items and add the new dish
     cart.items = [
       {
         dishId: dishId,
@@ -486,39 +475,33 @@ exports.removeFromCart = async (req, res) => {
   try {
     const { userId, dishId } = req.body;
 
-    // Validate user existence
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Validate dish existence
     const dish = await Dish.findById(dishId);
     if (!dish) {
       return res.status(404).json({ error: "Dish not found" });
     }
 
-    // Find the user's cart
     const cart = await Cart.findOne({ user: userId });
     if (!cart) {
       return res.status(404).json({ error: "Cart not found" });
     }
 
-    // Find the index of the dish in the cart items
     const itemIndex = cart.items.findIndex((item) => item.dishId.toString() === dishId);
 
     if (itemIndex === -1) {
       return res.status(404).json({ error: "Dish not found in cart" });
     }
 
-    // Decrement the quantity if greater than 1, otherwise remove the item
     if (cart.items[itemIndex].quantity > 1) {
       cart.items[itemIndex].quantity -= 1;
     } else {
-      cart.items.splice(itemIndex, 1); // Remove item if quantity becomes 0
+      cart.items.splice(itemIndex, 1); 
     }
 
-    // Save the updated cart
     await cart.save();
 
     res.status(200).json({ success: true, message: "Cart updated." });
@@ -526,27 +509,3 @@ exports.removeFromCart = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
-
-// exports.getAddedItemsInCartByUser = async (req, res) => {
-//   try {
-//     const userId = req.params.id;
-
-//     // Find the cart for the given user
-//     const cart = await Cart.findOne({ user: userId }).populate({
-//       path: 'items.dishId',
-//       model: 'dishes',
-//     });
-
-//     if (!cart) {
-//       return res.status(404).json({ error: "Cart not found" });
-//     }
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Cart fetched successfully",
-//       data: cart,
-//     });
-//   } catch (error) {
-//     res.status(400).json({ error: error.message });
-//   }
-// };
