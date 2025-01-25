@@ -7,7 +7,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-const uploadDocuments = async (documents,folderName,userId) => {
+const uploadMultiDocuments = async (documents,folderName,userId) => {
   try {
     const uploadPromises = documents?.map((document) => {
       return cloudinary.uploader.upload(document, {
@@ -24,4 +24,17 @@ const uploadDocuments = async (documents,folderName,userId) => {
   }
 };
 
-module.exports = { uploadDocuments };
+const uploadSingleDocument = async (document,folderName,userId) => {
+  try {
+    const result = await cloudinary.uploader.upload(document, {
+      resource_type: 'image',
+      folder: `${folderName}/${userId}`
+    });
+    return result.secure_url;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+module.exports = { uploadMultiDocuments, uploadSingleDocument };

@@ -221,7 +221,6 @@ exports.updateOrder = async (req, res) => {
     const order = await Order.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
     });
-    // console.log(order);
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
@@ -230,23 +229,6 @@ exports.updateOrder = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
-
-// exports.cancelOrder = async (req, res) => {
-//   try {
-//     const orderId = req.params.id;
-//     // console.log(orderId);
-
-//     const order = await Order.findByIdAndDelete(orderId);
-
-//     if (!order) {
-//       return res.status(404).json({ error: "Order not found" });
-//     }
-
-//     res.json({ message: "Order deleted successfully" });
-//   } catch (error) {
-//     res.status(400).json({ error: error.message });
-//   }
-// };
 
 exports.cancelOrder = async (req, res) => {
   try {
