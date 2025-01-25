@@ -3,7 +3,7 @@ const AccountDetails = require("../models/BankDetailsModel");
 const UserDetails = require("../models/userDetailsSchema");
 const User = require("../models/userModel");
 const Dish = require("../models/dishSchema")
-const { uploadDocuments } = require("../Utils/Cloudinary");// Helper function to validate required fields
+const { uploadMultiDocuments, uploadSingleDocument } = require("../Utils/Cloudinary");
 const validateFields = (fields, requiredFields) => {
   for (const field of requiredFields) {
     if (!fields[field]) {
@@ -28,6 +28,7 @@ exports.addRestaurantDetails = async (req, res) => {
     location,
     userId,
     // dishes,
+    description,
     discounts,
     img,
     openingTime,
@@ -57,8 +58,15 @@ exports.addRestaurantDetails = async (req, res) => {
       const newAccountDetails = new AccountDetails(accountDetails);
       savedAccountDetails = await newAccountDetails.save();
     }
+    const folder = 'restaurant-images';
+    const imgUrl = await uploadSingleDocument(img, folder, userId);
+    if (!imgUrl) {
+      return res.status(400).json({ error: 'No image uploaded or failed to upload image' });
+    }
+
+
     const folderName =  'restaurant-documents';
-    const documentUrl = await uploadDocuments(document, folderName, userId);
+    const documentUrl = await uploadMultiDocuments(document, folderName, userId);
   if (!documentUrl) {
     return res.status(400).json({ error: 'No document uploaded or failed to upload document' });
   }
@@ -78,9 +86,10 @@ exports.addRestaurantDetails = async (req, res) => {
       accountDetails: savedAccountDetails,
       availabilityStatus,
       location,
+      description,
       // dishes,
       discounts,
-      img,
+      img: imgUrl,
       openingTime,
       closingTime,
       dishTypes
@@ -275,9 +284,14 @@ exports.getAllRestaurants = async (req, res) => {
 
 // Add a new dish
 exports.addDish = async (req, res) => {
-  const { restaurant, dishName, price, description, available, dishType, category } = req.body;
+  const { restaurant, dishName, price, description, available, dishType, category,image } = req.body;
 
   try {
+    const folder = 'dish-images';
+    const imgUrl = await uploadSingleDocument(image, folder, restaurant);
+    if (!imgUrl) {
+      return res.status(400).json({ error: 'No image uploaded or failed to upload image' });
+    }
       const newDish = new Dish({
           restaurant,
           dishName,
@@ -285,8 +299,10 @@ exports.addDish = async (req, res) => {
           description,
           available,
           dishType,
-          category
+          category,
+          image: imgUrl
       });
+     
 
       await newDish.save();
       res.status(201).json({ success: true, message: 'Dish created successfully', data: newDish });

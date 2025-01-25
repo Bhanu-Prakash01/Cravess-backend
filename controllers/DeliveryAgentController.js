@@ -1,7 +1,7 @@
 const DeliveryAgentDetails = require("../models/DeliveryAgentDetails");
 const AccountDetails = require("../models/BankDetailsModel");
 const User = require("../models/userModel");
-const { uploadDocuments } = require("../Utils/Cloudinary");// Helper function to validate required fields
+const { uploadMultiDocuments } = require("../Utils/Cloudinary");// Helper function to validate required fields
 const validateFields = (fields, requiredFields) => {
   for (const field of requiredFields) {
     if (!fields[field]) {
@@ -77,7 +77,7 @@ exports.createDeliveryAgent = async (req, res) => {
 
     // for documents
     const folderName =  'agent-documents';
-    const documentUrl = await uploadDocuments(document, folderName, userId);
+    const documentUrl = await uploadMultiDocuments(document, folderName, userId);
   if (!documentUrl) {
     return res.status(400).json({ error: 'No document uploaded or failed to upload document' });
   }

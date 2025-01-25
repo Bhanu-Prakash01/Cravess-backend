@@ -42,6 +42,7 @@ const restaurantDetailsSchema = new mongoose.Schema({
         },
     },
     img: String,
+    description: String,
         // required: true,,
     openingTime: String,
         // required: true,,
