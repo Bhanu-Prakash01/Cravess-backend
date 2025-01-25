@@ -316,10 +316,17 @@ exports.getDishById = async (req, res) => {
   const { id } = req.params;
   try {
       const dish = await Dish.findById(id);
+      const restaurant = await RestaurantDetails.findById(dish.restaurant);
+      
+      const restaurantName = restaurant?.restaurantDetails?.restaurantName;
       if (!dish) {
           return res.status(404).json({ error: 'Dish not found' });
       }
-      res.status(200).json({ success: true, message: 'Dish fetched successfully', data: dish });
+      const dishDetails = {
+        ...dish._doc,
+        restaurantName: restaurantName
+      }
+      res.status(200).json({ success: true, message: 'Dish fetched successfully', data: dishDetails });
   } catch (err) {
       res.status(500).json({ error: err.message });
   }

@@ -11,7 +11,8 @@ const {
     addToCart,
     getAddedItemsInCartByUser,
     switchRestaurant,
-    removeFromCart
+    removeFromCart,
+    removeOneFromCart
 } = require("../controllers/orderControllers");
 const { add } = require('../models/discountSchema');
 
@@ -32,6 +33,8 @@ router.get('/getOrdersByUser/:id',getOrdersByUserId)  //public
 router.post("/addToCart", addToCart);
 
 router.post('/switchRestaurant',switchRestaurant)
+
+router.delete("/removeOneFromCart",removeOneFromCart)
 
 router.delete("/removeFromCart",removeFromCart)
 
