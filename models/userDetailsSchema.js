@@ -7,7 +7,7 @@ const userDetailsSchema = new mongoose.Schema({
   favoriteRestaurants: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "restaurantdetails",
+      ref: "RestaurantDetails",
     },
   ],
   favoriteDishes: [
@@ -26,4 +26,4 @@ updatedAt: {
 },
 });
 
-module.exports = mongoose.model("userdetails", userDetailsSchema);
+module.exports = mongoose.model("UserDetails", userDetailsSchema,"UserDetails");

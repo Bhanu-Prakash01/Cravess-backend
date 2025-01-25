@@ -70,6 +70,7 @@ const userSchema = new mongoose.Schema(
         "RestaurantDetails",
         "UserDetails",
       ],
+
     },
     addresses: [
       {
@@ -87,26 +88,60 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-userSchema.pre("save", function (next) {
-  switch (this.role) {
-    case "Admin":
-      this.additionalDetailModel = "AdminDetails";
-      break;
-    case "DeliveryAgent":
-      this.additionalDetailModel = "DeliveryAgentDetails";
-      break;
-    case "Restaurant":
-      this.additionalDetailModel = "RestaurantDetails";
-      break;
-    case "User":
-      this.additionalDetailModel = "UserDetails";
-      break;
-    default:
-      next(new Error("Invalid role specified"));
-      return;
+
+// userSchema.pre("save", function (next) {
+//   switch (this.role) {
+//     case "Admin":
+//       this.additionalDetailModel = "AdminDetails";
+//       break;
+//     case "DeliveryAgent":
+//       this.additionalDetailModel = "DeliveryAgentDetails";
+//       break;
+//     case "Restaurant":
+//       this.additionalDetailModel = "RestaurantDetails";
+//       break;
+//     case "User":
+//       this.additionalDetailModel = "UserDetails";
+//       break;
+//     default:
+//       next(new Error("Invalid role specified"));
+//       return;
+//   }
+//   next();
+// });
+
+userSchema.pre("save", async function (next) {
+  try {
+    // Check if additionalDetail is already set (to avoid duplicates)
+    if (this.additionalDetail) return next();
+
+    // Determine the appropriate model based on the role
+    const modelMap = {
+      Admin: mongoose.model("AdminDetails"),
+      DeliveryAgent: mongoose.model("DeliveryAgentDetails"),
+      Restaurant: mongoose.model("RestaurantDetails"),
+      User: mongoose.model("UserDetails"),
+    };
+
+    const DetailModel = modelMap[this.role];
+    if (!DetailModel) {
+      return next(new Error("Invalid role specified"));
+    }
+    
+    
+    // Create a new document in the corresponding model
+    const additionalDetailDoc = await DetailModel.create({});
+    this.additionalDetail = additionalDetailDoc._id; // Set the reference to the newly created document
+    this.additionalDetailModel = `${this.role}Details`; // Set the model name
+    console.log("Creating additionalDetail document for role:", this.role);
+    console.log("Additional detail created:", additionalDetailDoc);
+
+    next();
+  } catch (err) {
+    next(err); // Pass any errors to Mongoose
   }
-  next();
 });
+
 
 // Function to encrypt the value
 function encrypt(text) {

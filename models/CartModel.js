@@ -22,7 +22,7 @@ const cartItemSchema = new Schema({
   },
   restaurant:{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'restaurantdetails',
+    ref: 'RestaurantDetails',
     required: true
   }
 });

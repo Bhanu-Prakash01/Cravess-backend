@@ -4,7 +4,7 @@ const CONSTANTS = require('../constants/constants');
 const dishSchema = new mongoose.Schema({
     restaurant: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'restaurantdetails',
+        ref: 'RestaurantDetails',
         required: true
     },
     dishName: {

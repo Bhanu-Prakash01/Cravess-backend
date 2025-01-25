@@ -87,4 +87,4 @@ const restaurantDetailsSchema = new mongoose.Schema({
 //     description: "text",
 //     tags: "text",
 //   });
-module.exports = mongoose.model('restaurantdetails', restaurantDetailsSchema);
+module.exports = mongoose.model('RestaurantDetails', restaurantDetailsSchema,"RestaurantDetails");
