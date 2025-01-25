@@ -312,6 +312,19 @@ exports.getDishesByRestaurant = async (req, res) => {
   }
 };
 
+exports.getDishById = async (req, res) => {
+  const { id } = req.params;
+  try {
+      const dish = await Dish.findById(id);
+      if (!dish) {
+          return res.status(404).json({ error: 'Dish not found' });
+      }
+      res.status(200).json({ success: true, message: 'Dish fetched successfully', data: dish });
+  } catch (err) {
+      res.status(500).json({ error: err.message });
+  }
+}
+
 exports.deleteDishesById = async (req, res) => {
   const { id } = req.params;
   try {

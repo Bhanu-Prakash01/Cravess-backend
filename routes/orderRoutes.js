@@ -7,8 +7,13 @@ const {
     updateOrder,
     cancelOrder,
     trackOrder,
-    getOrdersByUserId
-} = require("../controllers/orderControllers")
+    getOrdersByUserId,
+    addToCart,
+    getAddedItemsInCartByUser,
+    switchRestaurant,
+    removeFromCart
+} = require("../controllers/orderControllers");
+const { add } = require('../models/discountSchema');
 
 // Route to place an order
 router.post('/placeOrder', placeOrder)           // user will use this api   //user
@@ -23,5 +28,13 @@ router.put('/updateOrder/:id', updateOrder)      // user,restaurant will use thi
 router.delete('/cancelOrder/:id', cancelOrder)    // user, restaurant will use this api  //user&restaurant
 
 router.get('/getOrdersByUser/:id',getOrdersByUserId)  //public
+
+router.post("/addToCart", addToCart);
+
+router.post('/switchRestaurant',switchRestaurant)
+
+router.delete("/removeFromCart",removeFromCart)
+
+router.get("/getAddedItemsInCart/:id",getAddedItemsInCartByUser)
 
 module.exports = router;
