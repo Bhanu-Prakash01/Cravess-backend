@@ -354,10 +354,78 @@ exports.getOrdersByUserId = async (req, res) => {
 // };
 
 
+// exports.addToCart = async (req, res) => {
+//   try {
+//     const { userId, dishId } = req.body;
+
+//     const user = await User.findById(userId);
+//     if (!user) {
+//       return res.status(404).json({ error: "User not found" });
+//     }
+
+//     const dish = await Dish.findById(dishId);
+//     if (!dish) {
+//       return res.status(404).json({ error: "Dish not found" });
+//     }
+
+//     // Get or create cart
+//     let cart = await Cart.findOne({ user: userId });
+//     if (!cart) {
+//       cart = new Cart({
+//         user: userId,
+//         items: [
+//           {
+//             dishId: dishId,
+//             quantity: 1,
+//             price: dish.price,
+//             dishName: dish.dishName, 
+//             restaurant: dish.restaurant,
+//           },
+//         ],
+//       });
+//       await cart.save();
+//       return res.status(200).json({ success: true, message: "Dish added to cart successfully" });
+//     }
+
+//     // Check if cart already has items from a different restaurant
+//     const isDifferentRestaurant = cart.items.some(
+//       (item) => item.restaurant.toString() !== dish.restaurant.toString()
+//     );
+
+//     if (isDifferentRestaurant) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Your cart contains items from a different restaurant. Do you want to switch?",
+//         conflict: true,
+//       });
+//     }
+//     const existingItemIndex = cart.items.findIndex(
+//       (item) => item.dishId.toString() === dishId
+//     );
+
+//     if (existingItemIndex !== -1) {
+//       cart.items[existingItemIndex].quantity += 1;
+//     } else {
+//       cart.items.push({
+//         dishId: dishId,
+//         quantity: 1,
+//         price: dish.price,
+//         dishName: dish.dishName,
+//         restaurant: dish.restaurant,
+//       });
+//     }
+
+//     await cart.save();
+//     res.status(200).json({ success: true, message: "Dish added to cart successfully", data: cart });
+//   } catch (error) {
+//     res.status(400).json({ error: error.message });
+//   }
+// };
 exports.addToCart = async (req, res) => {
   try {
-    const { userId, dishId } = req.body;
+    const { userId, dishId, quantity } = req.body; // Include quantity in the request body
 
+    // Validate user existence
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
@@ -368,7 +436,10 @@ exports.addToCart = async (req, res) => {
       return res.status(404).json({ error: "Dish not found" });
     }
 
-    // Get or create cart
+    if (!quantity || quantity <= 0) {
+      return res.status(400).json({ error: "Quantity must be a positive number" });
+    }
+
     let cart = await Cart.findOne({ user: userId });
     if (!cart) {
       cart = new Cart({
@@ -376,15 +447,15 @@ exports.addToCart = async (req, res) => {
         items: [
           {
             dishId: dishId,
-            quantity: 1,
+            quantity: quantity,
             price: dish.price,
-            dishName: dish.dishName, 
+            dishName: dish.dishName,
             restaurant: dish.restaurant,
           },
         ],
       });
       await cart.save();
-      return res.status(200).json({ success: true, message: "Dish added to cart successfully" });
+      return res.status(200).json({ success: true, message: "Dish added to cart successfully", data: cart });
     }
 
     // Check if cart already has items from a different restaurant
@@ -399,16 +470,20 @@ exports.addToCart = async (req, res) => {
         conflict: true,
       });
     }
+
+    // Check if the dish already exists in the cart
     const existingItemIndex = cart.items.findIndex(
       (item) => item.dishId.toString() === dishId
     );
 
     if (existingItemIndex !== -1) {
-      cart.items[existingItemIndex].quantity += 1;
+      // If the dish exists, update the quantity
+      cart.items[existingItemIndex].quantity += quantity;
     } else {
+      // If the dish doesn't exist, add it with the specified quantity
       cart.items.push({
         dishId: dishId,
-        quantity: 1,
+        quantity: quantity,
         price: dish.price,
         dishName: dish.dishName,
         restaurant: dish.restaurant,
@@ -471,7 +546,7 @@ exports.getAddedItemsInCartByUser = async (req, res) => {
   }
 };
 
-exports.removeFromCart = async (req, res) => {
+exports.removeOneFromCart = async (req, res) => {
   try {
     const { userId, dishId } = req.body;
 
@@ -509,3 +584,37 @@ exports.removeFromCart = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+
+exports.removeFromCart = async (req, res) => {
+  try {
+    const { userId, dishId } = req.body;
+   console.log(userId,dishId);
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const dish = await Dish.findById(dishId);
+    if (!dish) {
+      return res.status(404).json({ error: "Dish not found" });
+    }
+
+    const cart = await Cart.findOne({ user: userId });    
+    if (!cart) {
+      return res.status(404).json({ error: "Cart not found" });
+    }
+
+    const itemIndex = cart.items.findIndex((item) => item.dishId.toString() === dishId);
+    if (itemIndex === -1) {
+      return res.status(404).json({ error: "Dish not found in cart" });
+    }
+
+    cart.items.splice(itemIndex, 1);
+
+    await cart.save();
+
+    res.status(200).json({ success: true, message: "Cart updated." });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+    }
