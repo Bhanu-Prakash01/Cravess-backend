@@ -11,6 +11,7 @@ const {
   addDish,
   getDishesByRestaurant,
   getAllDishes,
+  getDishById,
   getAllRestaurants,
   deleteDishesById,
   addFavouriteDish,
@@ -38,6 +39,8 @@ router.post("/addDish", addDish);
 router.get("/getDish/:restaurantId", getDishesByRestaurant);
 
 router.get("/getAllDishes",getAllDishes);
+
+router.get("/getDishById/:id",getDishById);
 
 router.delete("/deleteDishes/:id", deleteDishesById);
 

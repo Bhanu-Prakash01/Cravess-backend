@@ -6,6 +6,7 @@ const { awardPoints, redeemPoints } = require("./LoyaltyReward");
 const Offer = require("../models/OfferSchema")
 const Coupon = require("../models/CouponSchema")
 const Dish = require("../models/dishSchema");
+const Cart = require("../models/CartModel");
 const calculateDistance = require("../Utils/CalculateDistance");
 const DeliveryAgent = require("../models/DeliveryAgentDetails");
 const CONSTANTS = require("../constants/constants");
@@ -351,3 +352,160 @@ exports.getOrdersByUserId = async (req, res) => {
 //     res.status(400).json({ error: error.message });
 //   }
 // };
+
+
+exports.addToCart = async (req, res) => {
+  try {
+    const { userId, dishId } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const dish = await Dish.findById(dishId);
+    if (!dish) {
+      return res.status(404).json({ error: "Dish not found" });
+    }
+
+    // Get or create cart
+    let cart = await Cart.findOne({ user: userId });
+    if (!cart) {
+      cart = new Cart({
+        user: userId,
+        items: [
+          {
+            dishId: dishId,
+            quantity: 1,
+            price: dish.price,
+            dishName: dish.dishName, 
+            restaurant: dish.restaurant,
+          },
+        ],
+      });
+      await cart.save();
+      return res.status(200).json({ success: true, message: "Dish added to cart successfully" });
+    }
+
+    // Check if cart already has items from a different restaurant
+    const isDifferentRestaurant = cart.items.some(
+      (item) => item.restaurant.toString() !== dish.restaurant.toString()
+    );
+
+    if (isDifferentRestaurant) {
+      return res.status(400).json({
+        success: false,
+        message: "Your cart contains items from a different restaurant. Do you want to switch?",
+        conflict: true,
+      });
+    }
+    const existingItemIndex = cart.items.findIndex(
+      (item) => item.dishId.toString() === dishId
+    );
+
+    if (existingItemIndex !== -1) {
+      cart.items[existingItemIndex].quantity += 1;
+    } else {
+      cart.items.push({
+        dishId: dishId,
+        quantity: 1,
+        price: dish.price,
+        dishName: dish.dishName,
+        restaurant: dish.restaurant,
+      });
+    }
+
+    await cart.save();
+    res.status(200).json({ success: true, message: "Dish added to cart successfully", data: cart });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+exports.switchRestaurant = async (req, res) => {
+  try {
+    const { userId, dishId } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const dish = await Dish.findById(dishId);
+    if (!dish) {
+      return res.status(404).json({ error: "Dish not found" });
+    }
+
+    let cart = await Cart.findOne({ user: userId });
+    if (!cart) {
+      return res.status(404).json({ error: "Cart not found" });
+    }
+
+    cart.items = [
+      {
+        dishId: dishId,
+        quantity: 1,
+        price: dish.price,
+        dishName: dish.dishName,
+        restaurant: dish.restaurant,
+      },
+    ];
+
+    await cart.save();
+    res.status(200).json({ success: true, message: "Items Added. Switched to another restaurant successfully" });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+exports.getAddedItemsInCartByUser = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const cart = await Cart.findOne({ user: userId });
+    if (!cart) {
+      return res.status(404).json({ error: "Cart not found" });
+    }
+    res.status(200).json({ success: true, message: "Cart fetched successfully", data: cart });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+exports.removeFromCart = async (req, res) => {
+  try {
+    const { userId, dishId } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const dish = await Dish.findById(dishId);
+    if (!dish) {
+      return res.status(404).json({ error: "Dish not found" });
+    }
+
+    const cart = await Cart.findOne({ user: userId });
+    if (!cart) {
+      return res.status(404).json({ error: "Cart not found" });
+    }
+
+    const itemIndex = cart.items.findIndex((item) => item.dishId.toString() === dishId);
+
+    if (itemIndex === -1) {
+      return res.status(404).json({ error: "Dish not found in cart" });
+    }
+
+    if (cart.items[itemIndex].quantity > 1) {
+      cart.items[itemIndex].quantity -= 1;
+    } else {
+      cart.items.splice(itemIndex, 1); 
+    }
+
+    await cart.save();
+
+    res.status(200).json({ success: true, message: "Cart updated." });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
