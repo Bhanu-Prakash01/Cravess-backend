@@ -311,6 +311,39 @@ exports.addDish = async (req, res) => {
   }
 };
 
+exports.updateDish = async (req, res) => {
+  const { id } = req.params;
+  const { dishName, price, description, available, dishType, category, image } = req.body;
+
+  try {
+      const dish = await Dish.findById(id);
+      if (!dish) {
+          return res.status(404).json({ error: 'Dish not found' });
+      }
+
+      dish.dishName = dishName;
+      dish.price = price;
+      dish.description = description;
+      dish.available = available;
+      dish.dishType = dishType;
+      dish.category = category;
+
+      if (image) {
+        const folder = 'dish-images';
+        const imgUrl = await uploadSingleDocument(image, folder, dish.restaurant);
+        if (!imgUrl) {
+          return res.status(400).json({ error: 'No image uploaded or failed to upload image' });
+        }
+        dish.image = imgUrl;
+      }
+
+      await dish.save();
+      res.status(200).json({ success: true, message: 'Dish updated successfully', data: dish });
+  } catch (err) {
+      res.status(500).json({ error: err.message });
+  }
+}
+
 // Fetch all dishes for a specific restaurant
 exports.getDishesByRestaurant = async (req, res) => {
   const { restaurantId } = req.params;

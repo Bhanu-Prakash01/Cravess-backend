@@ -16,6 +16,7 @@ const {
   deleteDishesById,
   addFavouriteDish,
   addFavouriteRestaurant,
+  updateDish
 } = require("../controllers/restaurantController");
 
 // Route to get a restaurant
@@ -34,6 +35,8 @@ router.put("/availability/:id", changeAvailabilityStatus);
 
 // Route to dish of a restaurant
 router.post("/addDish", addDish);
+
+router.put("/updateDish/:id", updateDish);
 
 // Route to get dishes of a restaurant
 router.get("/getDish/:restaurantId", getDishesByRestaurant);
