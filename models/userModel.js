@@ -6,58 +6,32 @@ require('dotenv').config();
 const encryptionKey = crypto.createHash('sha256').update(process.env.ENCRYPTION_KEY).digest();
 const iv = crypto.randomBytes(16); 
 
-// const iv = Buffer.from('1234567890123456'); // Example IV (16 bytes for aes-256-cbc)
-// const encryptionKey = crypto.createHash('sha256').update('craves_encryption_key').digest();
-//Define the user Schema using the Mongoose Schema Constructor
-
 const userSchema = new mongoose.Schema(
   {
     userName: {
       type: String,
-      //   required: true,
     },
-    password: {
+    email: {
       type: String,
-      //   required: true,
-    },
-    token: {
-      type: String,
-    },
-    userEmail: {
-      type: String,
-      // required: true,
-      set: (val) => encrypt(val), // Encrypt email before saving
-      get: (val) => decrypt(val), // Decrypt email when retrieving
+      set: (val) => encrypt(val), 
+      get: (val) => decrypt(val), 
     },
     phone: {
       type: String,
       required: true,
-      minlength: 10, // Set minimum length to 10
-      set: (val) => encrypt(val), // Encrypt Phone before saving
-      get: (val) => decrypt(val), // Decrypt Phone when retrieving
+      minlength: 10, 
+      // set: (val) => encrypt(val), 
+      // get: (val) => decrypt(val), 
     },
     image: {
       type: String,
-      //   required: true,
     },
     role: {
       type: String,
       enum: CONSTANTS.ENUM.ROLES,
       required: true,
     },
-    addressLine1: {
-      type: String,
-    },
-    city: {
-      type: String,
-    },
-    country: {
-      type: String,
-    },
-    points: {
-      type: Number,
-      default: 0,
-    },
+  
     additionalDetail: {
       type: mongoose.Schema.Types.Mixed,
       refPath: "additionalDetailModel",
@@ -70,14 +44,8 @@ const userSchema = new mongoose.Schema(
         "RestaurantDetails",
         "UserDetails",
       ],
-
     },
-    addresses: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "UserAddresses",
-      },
-    ],
+  
     createdAt: {
       type: Date,
       default: Date.now,
@@ -85,79 +53,53 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    toJSON: { getters: true },
+    toObject: { getters: true }, 
   }
 );
 
 
-// userSchema.pre("save", function (next) {
-//   switch (this.role) {
-//     case "Admin":
-//       this.additionalDetailModel = "AdminDetails";
-//       break;
-//     case "DeliveryAgent":
-//       this.additionalDetailModel = "DeliveryAgentDetails";
-//       break;
-//     case "Restaurant":
-//       this.additionalDetailModel = "RestaurantDetails";
-//       break;
-//     case "User":
-//       this.additionalDetailModel = "UserDetails";
-//       break;
-//     default:
-//       next(new Error("Invalid role specified"));
-//       return;
-//   }
-//   next();
-// });
-
-userSchema.pre("save", async function (next) {
-  try {
-    // Check if additionalDetail is already set (to avoid duplicates)
-    if (this.additionalDetail) return next();
-
-    // Determine the appropriate model based on the role
-    const modelMap = {
-      Admin: mongoose.model("AdminDetails"),
-      DeliveryAgent: mongoose.model("DeliveryAgentDetails"),
-      Restaurant: mongoose.model("RestaurantDetails"),
-      User: mongoose.model("UserDetails"),
-    };
-
-    const DetailModel = modelMap[this.role];
-    if (!DetailModel) {
-      return next(new Error("Invalid role specified"));
-    }
+userSchema.pre("save", function (next) {
+  switch (this.role) {
     
-    
-    // Create a new document in the corresponding model
-    const additionalDetailDoc = await DetailModel.create({});
-    this.additionalDetail = additionalDetailDoc._id; // Set the reference to the newly created document
-    this.additionalDetailModel = `${this.role}Details`; // Set the model name
-    console.log("Creating additionalDetail document for role:", this.role);
-    console.log("Additional detail created:", additionalDetailDoc);
-
-    next();
-  } catch (err) {
-    next(err); // Pass any errors to Mongoose
+    case "Admin":
+      this.additionalDetailModel = "AdminDetails";
+      break;
+    case "DeliveryAgent":
+      this.additionalDetailModel = "DeliveryAgentDetails";
+      break;
+    case "Restaurant":
+      this.additionalDetailModel = "RestaurantDetails";
+      break;
+    case "User":
+      this.additionalDetailModel = "UserDetails";
+      break;
+    default:
+      next(new Error("Invalid role specified"));
+      return;
   }
+  next();
 });
-
 
 // Function to encrypt the value
 function encrypt(text) {
   const cipher = crypto.createCipheriv('aes-256-cbc', encryptionKey, iv);
   let encrypted = cipher.update(text, 'utf8', 'hex');
   encrypted += cipher.final('hex');
-  return encrypted;
+  const encryptedData = iv.toString('hex') + ':' + encrypted;
+  return encryptedData;
 }
 
 // Function to decrypt the value
-function decrypt(text) {
+function decrypt(encryptedText) {
+  // Split the stored value to extract IV and encrypted data
+  const [ivHex, encrypted] = encryptedText.split(':');
+  const iv = Buffer.from(ivHex, 'hex');
   const decipher = crypto.createDecipheriv('aes-256-cbc', encryptionKey, iv);
-  let decrypted = decipher.update(text, 'hex', 'utf8');
+  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
   decrypted += decipher.final('utf8');
   return decrypted;
 }
 
-// Export the Mongoose model for the user schema, using the name "user"
+
 module.exports = mongoose.model("users", userSchema);

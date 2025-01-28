@@ -13,23 +13,25 @@ const {
     getCouponById
 } = require("../controllers/offersAndCoupons")
 
+const { auth, isRestaurant } = require("../middlewares/RBAC");
+
 // Route to create a new offer
-router.post("/createOffer",createOffer)
+router.post("/createOffer", auth, isRestaurant, createOffer)
 
 // Route to replace offers
-router.put('/offers/:offerId/restaurants/:restaurantId/dishes/:dishId', addOfferToDish);
+router.put('/offers/:offerId/restaurants/:restaurantId/dishes/:dishId', auth, isRestaurant, addOfferToDish);
 
 // Route to delete the offers
-router.delete('/offers/:offerId/restaurants/:restaurantId/dishes/:dishId', removeOfferFromDish);
+router.delete('/offers/:offerId/restaurants/:restaurantId/dishes/:dishId', auth, isRestaurant, removeOfferFromDish);
 
 // Route to create a new coupon
-router.post("/createCoupon", createCoupon)
+router.post("/createCoupon",auth, isRestaurant, createCoupon)
 
 // Route to update a coupon
-router.put("/updateCoupon/:id", updateCoupon)
+router.put("/updateCoupon/:id",auth, isRestaurant, updateCoupon)
 
 // Route to delete a coupon
-router.delete("/deleteCoupon/:id", deleteCoupon)
+router.delete("/deleteCoupon/:id", auth, isRestaurant, deleteCoupon)
 
 router.get("/getAllCoupons", getAllCoupons)
 

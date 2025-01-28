@@ -19,9 +19,18 @@ const ratingAndReviewSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "DeliveryAgent", // Reference to the delivery agent being reviewed
     },
-	rating: {
+	dishId: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "dishes",
+	},
+	ratingDeliveryAgent: {
 		type: Number,
-		required: true,
+	},
+	ratingRestaurant: {
+		type: Number,
+	},
+	ratingDish: {
+		type: Number,
 	},
 	reviewText: {
 		type: String,

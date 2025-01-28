@@ -2,9 +2,10 @@ const RestaurantDetails = require("../models/restaurantDetailsModel");
 const DeliveryAgent = require('../models/DeliveryAgentDetails');
 const Review = require('../models/RatingAndReviewsModel');
 const Order = require('../models/orderSchema');
+const Dish = require('../models/dishSchema');
 
 exports.createReview = async (req, res) => {
-    const { userId, orderId, rating, reviewText } = req.body;
+    const { userId, orderId, ratingDeliveryAgent, ratingRestaurant, ratingDish, reviewText } = req.body;
     try {
         // Ensure one of the IDs is provided
         if (!orderId) {
@@ -26,12 +27,15 @@ exports.createReview = async (req, res) => {
         // Get the restaurantId and deliveryAgentId from the order
         const restaurantId = order.items[0]?.restaurant;
         const deliveryAgentId = order.assignedAgent?.id;
+        const dishId = order.items[0]?.dishId;
 
         // Create the review
         const newReview = new Review({
             userId,
             orderId,
-            rating,
+            ratingDeliveryAgent,
+            ratingRestaurant,
+            ratingDish,
             reviewText,
             restaurantId,
             deliveryAgentId
@@ -45,13 +49,13 @@ exports.createReview = async (req, res) => {
                 const ratings = restaurantRatings.ratingAndReview;
                 const isFirstRestaurantRating = ratings?.length < 1; // **Check if it's the first review**
                 const averageRestaurantRating = isFirstRestaurantRating
-                    ? rating // First review sets the current rating directly
-                    : (ratings?.reduce((acc, review) => acc + review.rating, 0) + rating) / (ratings?.length + 1);
+                    ? ratingRestaurant // First review sets the current rating directly
+                    : (ratings?.reduce((acc, review) => acc + review.rating, 0) + ratingRestaurant) / (ratings?.length + 1);
                 await RestaurantDetails.findByIdAndUpdate(
                     restaurantId,
                     {
                         $set: { current_rating: averageRestaurantRating },
-                      $push: { ratingAndReview: { _id: newReview._id, rating } },
+                      $push: { ratingAndReview: { _id: newReview._id, rating:ratingRestaurant } },
                     },
                     { new: true }
                 );
@@ -59,20 +63,37 @@ exports.createReview = async (req, res) => {
 
             // Handle delivery agent rating
             if (deliveryAgentId) {
-                const deliveryAgentRatings = await DeliveryAgent.findOne({_id: deliveryAgentId });
+                const deliveryAgentRatings = await DeliveryAgent.findOne({ _id: deliveryAgentId });
                 const ratings = deliveryAgentRatings.ratingAndReview;
                 const isFirstDeliveryAgentRating = ratings?.length < 1; // **Check if it's the first review**
                 const averageDeliveryAgentRating = isFirstDeliveryAgentRating
-                    ? rating // First review sets the current rating directly
-                    : (ratings?.reduce((acc, review) => acc + review.rating, 0) + rating) / (ratings?.length + 1);
+                    ? ratingDeliveryAgent // First review sets the current rating directly
+                    : (ratings?.reduce((acc, review) => acc + review.rating, 0) + ratingDeliveryAgent) / (ratings?.length + 1);
                 await DeliveryAgent.findByIdAndUpdate(
                     deliveryAgentId,
                     {
                         $set: { current_rating: averageDeliveryAgentRating },
-                        $push: { ratingAndReview: { _id: newReview._id, rating } },
+                        $push: { ratingAndReview: { _id: newReview._id, rating: ratingDeliveryAgent } },
                     },
                     { new: true }
 
+                );
+            }
+
+            if(dishId){
+                const dishRatings = await Dish.findOne({ _id: dishId });
+                const ratings = dishRatings.ratingAndReview;
+                const isFirstDishRating = ratings?.length < 1; // **Check if it's the first review**
+                const averageDishRating = isFirstDishRating
+                    ? ratingDish // First review sets the current rating directly
+                    : (ratings?.reduce((acc, review) => acc + review.rating, 0) + ratingDish) / (ratings?.length + 1);
+                await Dish.findByIdAndUpdate(
+                    dishId,
+                    {
+                        $set: { current_rating: averageDishRating },
+                        $push: { ratingAndReview: { _id: newReview._id, rating: ratingDish } },
+                    },
+                    { new: true }
                 );
             }
         } catch (error) {

@@ -2,10 +2,10 @@ const CONSTANTS = {
 
     ENUM:{
         ROLES:["Admin", "DeliveryAgent", "Restaurant", "User"],
-        ORDER_STATUS:["Placed", "Processing", "Completed", "Cancelled"],
+        ORDER_STATUS:["Placed","Accepted", "Processing", "Completed", "Cancelled"],
         DELIVERY_STATUS:["Pending", "Out for Delivery", "Delivered", "Cancelled"],
         PAYMENT_STATUS:["Pending", "Completed", "Failed"],
-        DISH_TYPE:["Appetizer", "Main Course", "Dessert", "Beverage"],
+        DISH_TYPE:["Appetizer", "Main Course", "Dessert", "Beverage","Starters", "Salads", "Sides", "Soups", "Breads", "Bakery", "Other"],
         DISH_CATEGORY:["Veg", "NonVeg"],
         LOCATION:["Point"],
         GENDER:["Male", "Female", "Other"],
