@@ -1,5 +1,7 @@
 const Order = require("../models/orderSchema");
 const User = require("../models/userModel");
+const UserDetails = require("../models/userDetailsSchema");
+const UserAddress = require("../models/AddUserAddress");
 const mongoose = require("mongoose");
 const { ObjectId } = mongoose.Types;
 const { awardPoints, redeemPoints } = require("./LoyaltyReward");
@@ -29,7 +31,6 @@ exports.placeOrder = async (req, res) => {
     items,
     deliveryDetails,
     couponCode,
-    redeemedPoints,
   } = req.body;
 
   try {
@@ -37,7 +38,6 @@ exports.placeOrder = async (req, res) => {
     let discountAmount = 0;
     let finalPrice = 0;
     let appliedCoupon = null;
-    // Check if all dishes are available
     const unavailableDishes = [];
     for (const item of items) {
       const dish = await Dish.findOne({
@@ -58,6 +58,11 @@ exports.placeOrder = async (req, res) => {
       });
     }
 
+    const address = await UserAddress.findById(deliveryDetails.deliveryAddress);
+    if (!address) {
+      return res.status(400).json({ error: "Invalid delivery address." });
+    }
+    
     // Process each item and apply offer
     const processedItems = await Promise.all(
       items.map(async (item) => {
@@ -76,10 +81,8 @@ exports.placeOrder = async (req, res) => {
         };
       })
     );
-
     finalPrice = totalPrice;
  
-    // Validate and apply the coupon
 if (couponCode) {
   const coupon = await Coupon.findOne({ code: couponCode, restaurantId: items[0].restaurant });
   if (coupon) {
@@ -115,25 +118,6 @@ if (couponCode) {
     return res.status(400).json({ error: "Invalid coupon code or coupon not available for this restaurant." });
   }
 }
-
-    // Apply loyalty points if redeemed
-    if (redeemedPoints && redeemedPoints > 0) {
-      const userPoints = await getUserPoints(
-        new mongoose.Types.ObjectId(customer.user)
-      );
-      if (userPoints >= redeemedPoints) {
-        finalPrice = Math.max(finalPrice - redeemedPoints, 0);
-        await redeemPoints(
-          new mongoose.Types.ObjectId(customer.user),
-          redeemedPoints
-        );
-      } else {
-        return res
-          .status(400)
-          .json({ error: "Insufficient points for redemption." });
-      }
-    }
-
      // Find an available delivery agent
      const availableAgent = await DeliveryAgent.findOneAndUpdate(
       { availabilityStatus: "Available" },
@@ -145,17 +129,15 @@ if (couponCode) {
       return res
         .status(400)
         .json({ error: "No delivery agent is available at the moment." });
-    }
-
-    
+    }  
      // Calculate estimated delivery time
     //  const travelTime = await calculateDistance(
     //   availableAgent?.location, // Agent's location
     //   deliveryDetails?.deliveryAddress         // Customer's delivery address
     // );
 
-    const preparationTime = 10; // Example: 10 minutes for packaging
-    const bufferTime = 15; // Example: 15 minutes buffer
+    const preparationTime = 10;
+    const bufferTime = 15;
     const estimatedDeliveryTime = 30 + preparationTime + bufferTime;
 
     const newOrder = new Order({
@@ -165,20 +147,23 @@ if (couponCode) {
       discountedPrice: finalPrice,
       coupon: appliedCoupon,
       paymentStatus: "Pending", 
-      deliveryDetails,
+      deliveryDetails: {
+        deliveryAddress: address._id,
+        orderTime: new Date(),
+      },
       orderStatus: "Placed",
       assignedAgent: {
         id: availableAgent._id,
         name: availableAgent?.agent_name,
         contact: availableAgent?.contact,
       },
-      estimatedDeliveryTime: new Date(Date.now() + estimatedDeliveryTime * 60000), // Add minutes to current time
+      estimatedDeliveryTime: new Date(Date.now() + estimatedDeliveryTime * 60000),
     });
 
     await newOrder.save();
 
     if (customer && customer.user) {
-      const result = await awardPoints(
+       await awardPoints(
         new mongoose.Types.ObjectId(customer.user),
         finalPrice
       );
@@ -187,7 +172,7 @@ if (couponCode) {
         message:
           "Order placed successfully, discounts applied, and points awarded.",
         data: newOrder,
-        points: result.points,
+        
       });
     } else {
       res.status(201).json({
@@ -200,6 +185,7 @@ if (couponCode) {
     res.status(500).json({ error: err.message });
   }
 };
+
 exports.trackOrder = async (req, res) => {
   try {
     const orderId = req.params.id;
@@ -233,7 +219,6 @@ exports.updateOrder = async (req, res) => {
 exports.cancelOrder = async (req, res) => {
   try {
     const {userId} = req.body;
-    console.log(userId,"userId");
     const orderId = req.params.id;
     const order = await Order.findById(orderId);
 
@@ -241,7 +226,6 @@ exports.cancelOrder = async (req, res) => {
       return res.status(404).json({ error: "Order not found" });
     }
     const user = await User.findById(userId);
-    console.log(user);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -269,7 +253,7 @@ exports.cancelOrder = async (req, res) => {
 exports.getOrdersByUserId = async (req, res) => {
   try {
     const userId = req.params.id;
-    const orders = await Order.find({ "customer.user": userId });
+    const orders = await Order.find({ "customer.user": userId }).select("-__v -items.offer  -estimatedDeliveryTime -assignedAgent -deliveryDetails -coupon -customer");
     if (!orders) {
       return res.status(404).json({ error: "Orders not found" });
     }
@@ -518,7 +502,7 @@ exports.switchRestaurant = async (req, res) => {
 exports.getAddedItemsInCartByUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    const cart = await Cart.findOne({ user: userId });
+    const cart = await Cart.findOne({ user: userId }).select("-__v -items._id");
     if (!cart) {
       return res.status(404).json({ error: "Cart not found" });
     }
@@ -570,7 +554,6 @@ exports.removeOneFromCart = async (req, res) => {
 exports.removeFromCart = async (req, res) => {
   try {
     const { userId, dishId } = req.body;
-   console.log(userId,dishId);
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: "User not found" });

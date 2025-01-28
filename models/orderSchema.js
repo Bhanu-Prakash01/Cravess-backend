@@ -25,16 +25,17 @@ const customerInfoSchema = new mongoose.Schema({
     ref: "users",
     required: true,
   },
-  address: String,
+  // address: String,
   phone: String,
 });
 // Define the schema for delivery details
 const deliveryDetailsSchema = new mongoose.Schema({
-  // deliveryAgent: {
-  //   type: mongoose.Schema.Types.ObjectId,
-  //   ref: "DeliveryAgentDetails",
-  // },
-  deliveryAddress: String,
+  deliveryAddress: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "UserAddresses",
+    required: true,
+  },
+
   orderTime: {
     type: Date,
     default: Date.now,

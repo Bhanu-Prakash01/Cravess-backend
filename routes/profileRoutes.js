@@ -1,12 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const {
-  createDeliveryAgent,
-  updateDeliveryAgentProfile,
-  getDeliveryAgentDetailsById,
-} = require("../controllers/DeliveryAgentController");
-const { auth } = require("../controllers/RBAC");
-const {
   updateUser,
   getUserById,
   addUserAddress,
@@ -14,21 +8,35 @@ const {
   getUserAddress,
   getAllAddressByUser,
   deleteAllAddressByUser,
-  deleteAddressByUser
+  deleteAddressByUser,
+  addFavouriteDish,
+  addFavouriteRestaurant,
+  getAllFavouriteDishes,
+  getAllFavouriteRestaurants,
+  removeFavouriteDish,
+  removeFavouriteRestaurant
 } = require("../controllers/userProfileManagement");
+const { auth, isUser } = require("../middlewares/RBAC");
 
-router.put("/updateProfileDetails/:id", updateUser);
+router.put("/updateProfileDetails/:id",auth,isUser, updateUser);
 router.get("/getUserById/:id", getUserById);
-router.post("/addUserAddress", addUserAddress);
-router.put("/updateUserAddress/:addressId", updateUserAddress);
-router.get("/getUserAddress/:userId/:addressId", getUserAddress);
-router.get("/getAllAddressByUser/:id", getAllAddressByUser);
-router.delete("/deleteAllAddressByUser/:id", deleteAllAddressByUser);
-router.delete("/deleteAddressByUser/:userId/:addressId",deleteAddressByUser);
+router.post("/addUserAddress",auth,isUser, addUserAddress);
+router.put("/updateUserAddress/:addressId",auth,isUser, updateUserAddress);
+router.get("/getUserAddress/:userId/:addressId",auth,isUser, getUserAddress);
+router.get("/getAllAddressByUser/:id",auth,isUser, getAllAddressByUser);
+router.delete("/deleteAllAddressByUser/:id",auth,isUser, deleteAllAddressByUser);
+router.delete("/deleteAddressByUser/:userId/:addressId",auth,isUser, deleteAddressByUser);
 
-router.post("/createDeliveryAgent", createDeliveryAgent);
-router.put("/UpdateDeliveryAgent/:id", updateDeliveryAgentProfile);
+router.post("/addFavouriteDish",auth,isUser,addFavouriteDish);
 
-router.get("/getDeliveryAgent/:id", getDeliveryAgentDetailsById);
+router.post("/addFavouriteRestaurant",auth,isUser,addFavouriteRestaurant);
+
+router.get("/getFavouriteDishes/:id", auth,isUser,getAllFavouriteDishes);
+
+router.get("/getFavouriteRestaurants/:id", auth,isUser,getAllFavouriteRestaurants);
+
+router.delete("/deleteFavouriteDish/:userId/dish/:dishId", auth,isUser,removeFavouriteDish);
+
+router.delete("/deleteFavouriteRestaurant/:userId/restaurant/:restaurantId", auth,isUser,removeFavouriteRestaurant);
 
 module.exports = router;

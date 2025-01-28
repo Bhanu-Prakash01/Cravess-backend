@@ -2,6 +2,12 @@
 const mongoose = require("mongoose");
 
 const userDetailsSchema = new mongoose.Schema({
+  addresses: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "UserAddresses",
+    },
+  ],
   preferences: [String],
   loyaltyPoints: Number, 
   favoriteRestaurants: [

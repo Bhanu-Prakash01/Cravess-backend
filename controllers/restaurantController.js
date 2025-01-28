@@ -1,6 +1,5 @@
 const RestaurantDetails = require("../models/restaurantDetailsModel");
 const AccountDetails = require("../models/BankDetailsModel");
-const UserDetails = require("../models/userDetailsSchema");
 const User = require("../models/userModel");
 const Dish = require("../models/dishSchema")
 const { uploadMultiDocuments, uploadSingleDocument } = require("../Utils/Cloudinary");
@@ -102,21 +101,16 @@ exports.addRestaurantDetails = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-
-    // // Add the saved restaurant to the user's additionalDetails
-    // user.additionalDetail = user.additionalDetail || [];
-    // user.additionalDetail.push(savedRestaurant._id);
-    // await user.save();
-// Add or update the additionalDetail field in the user object
 if (!user.additionalDetail || typeof user.additionalDetail !== "object") {
   user.additionalDetail = {};
 }
 
-// Update additionalDetail to include the new restaurant details
 user.additionalDetail = {
   ...user.additionalDetail,
-  restaurantId: savedRestaurant._id, // Add the restaurant ID
+  restaurantId: savedRestaurant._id,
 };
+
+user.image = imgUrl;
 
 
     await user.save();
@@ -410,94 +404,3 @@ exports.getAllDishes = async (req, res) => {
 };
 
 
-exports.addFavouriteDish = async (req, res) => {
-  const { dishId } = req.body;
-  const { userId } = req.params;
-
-  try {
-    // Find the user by ID
-    const user = await User.findById(userId).populate("additionalDetail");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Ensure the user has a "UserDetails" additionalDetail
-    if (!user.additionalDetail || user.additionalDetailModel !== "UserDetails") {
-      return res.status(400).json({ message: "User details not available for this user" });
-    }
-
-    // Find the dish
-    const dish = await Dish.findById(dishId);
-    if (!dish) {
-      return res.status(404).json({ message: "Dish not found" });
-    }
-
-    // Add the dish to favoriteDishes
-    const userDetails = await UserDetails.findById(user.additionalDetail);
-    if (!userDetails.favoriteDishes.includes(dishId)) {
-      userDetails.favoriteDishes.push(dishId);
-      await userDetails.save();
-    }
-
-    res.status(200).json({ success: true, message: "Dish added to favourites" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-
-// exports.addFavouriteRestaurant = async (req, res) => {
-//   const { restaurantId } = req.body;
-//   const { userId } = req.params;
-//   try {
-//       const user = await User.findById(userId);
-//       if (!user) {
-//           return res.status(404).json({ message: 'User not found' });
-//       }
-//       const restaurant = await RestaurantDetails.findById(restaurantId);
-//       if (!restaurant) {
-//           return res.status(404).json({ message: 'Restaurant not found' });
-//       }
-//       user.favoriteRestaurants.push(restaurantId);
-//       await user.save();
-//       res.status(200).json({ success: true, message: 'Restaurant added to favourites' });
-//   } catch (err) {
-//       res.status(500).json({ error: err.message });
-//   }
-// };
-
-// Add Favorite Restaurant
-exports.addFavouriteRestaurant = async (req, res) => {
-  const { restaurantId } = req.body;
-  const { userId } = req.params;
-
-  try {
-    // Find the user by ID
-    const user = await User.findById(userId).populate("additionalDetail");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Ensure the user has a "UserDetails" additionalDetail
-    if (!user.additionalDetail || user.additionalDetailModel !== "UserDetails") {
-      return res.status(400).json({ message: "User details not available for this user" });
-    }
-
-    // Find the restaurant
-    const restaurant = await RestaurantDetails.findById(restaurantId);
-    if (!restaurant) {
-      return res.status(404).json({ message: "Restaurant not found" });
-    }
-
-    // Add the restaurant to favoriteRestaurants
-    const userDetails = await UserDetails.findById(user.additionalDetail);
-    if (!userDetails.favoriteRestaurants.includes(restaurantId)) {
-      userDetails.favoriteRestaurants.push(restaurantId);
-      await userDetails.save();
-    }
-
-    res.status(200).json({ success: true, message: "Restaurant added to favourites" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};

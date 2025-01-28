@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const crypto = require("crypto");
 require('dotenv').config();
 const encryptionKey = crypto.createHash('sha256').update(process.env.ENCRYPTION_KEY).digest();
-const iv = crypto.randomBytes(16);  // Generate a random 16-byte IV
+const iv = crypto.randomBytes(16);
 
 const accountDetailsSchema = new mongoose.Schema({
   bankName: {
@@ -43,6 +43,7 @@ const accountDetailsSchema = new mongoose.Schema({
     set: (val) => encrypt(val),
     get: (val) => decrypt(val),
   },
+  
   createdAt: {
     type: Date,
     default: Date.now,
@@ -51,20 +52,30 @@ const accountDetailsSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-});
+},
+{
+  timestamps: true,
+  toJSON: { getters: true },
+  toObject: { getters: true }, 
+}
 
-//function is used to encrypt the value
+);
+
 function encrypt(text) {
   const cipher = crypto.createCipheriv('aes-256-cbc', encryptionKey, iv);
   let encrypted = cipher.update(text, 'utf8', 'hex');
   encrypted += cipher.final('hex');
-  return encrypted;
+  const encryptedData = iv.toString('hex') + ':' + encrypted;
+  return encryptedData;
 }
 
 // Function to decrypt the value
-function decrypt(text) {
+function decrypt(encryptedText) {
+  // Split the stored value to extract IV and encrypted data
+  const [ivHex, encrypted] = encryptedText.split(':');
+  const iv = Buffer.from(ivHex, 'hex');
   const decipher = crypto.createDecipheriv('aes-256-cbc', encryptionKey, iv);
-  let decrypted = decipher.update(text, 'hex', 'utf8');
+  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
   decrypted += decipher.final('utf8');
   return decrypted;
 }

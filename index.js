@@ -16,7 +16,9 @@ const profileRoutes=require("./routes/profileRoutes")
 const ratingAndReview =require('./routes/ratingAndReviewsRoutes')
 const support =require('./routes/supportRoute')
 const discountRoutes=require("./routes/dynamicPricingAndDiscountRoutes")
+const delieveryAgentRoutes = require("./routes/deliveryAgentRoutes")
 const app = express();
+
 
 const connect = () => {
   mongoose
@@ -50,9 +52,12 @@ app.use("/api/v1/offers-and-coupons",OffersAndCoupons)
 app.use("/api/v1/review",Review)
 
 app.use('/api/v1/profile',profileRoutes);
-app.use('/api/v1/RatingAndReview',ratingAndReview)
-app.use('/api/v1/support',support)
-app.use('/api/v1/discounts',discountRoutes)
+app.use('/api/v1/RatingAndReview',ratingAndReview);
+app.use('/api/v1/support',support);
+app.use('/api/v1/discounts',discountRoutes);
+
+app.use('/api/v1/admin/loyalty-and-rewards',LoyaltyAndRewards)
+app.use('/api/v1/agent', delieveryAgentRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({

@@ -14,30 +14,30 @@ const {
     removeFromCart,
     removeOneFromCart
 } = require("../controllers/orderControllers");
-const { add } = require('../models/discountSchema');
+const { auth, isUser } = require("../middlewares/RBAC");
 
 // Route to place an order
-router.post('/placeOrder', placeOrder)           // user will use this api   //user
+router.post('/placeOrder',auth,isUser, placeOrder)           // user will use this api   //user
 
 // Route to track an order
 router.get("/trackOrder/:id", trackOrder)        // user or restaurant or delivery agent  will use this api //user,restaurant
 
 // Route to update an order
-router.put('/updateOrder/:id', updateOrder)      // user,restaurant will use this api
+// router.put('/updateOrder/:id',auth,isUser, updateOrder)      // user,restaurant will use this api
 
 // Route to cancel an order
 router.delete('/cancelOrder/:id', cancelOrder)    // user, restaurant will use this api  //user&restaurant
 
-router.get('/getOrdersByUser/:id',getOrdersByUserId)  //public
+router.get('/getOrdersByUser/:id', auth, isUser, getOrdersByUserId)  //public
 
-router.post("/addToCart", addToCart);
+router.post("/addToCart", auth, isUser, addToCart);
 
-router.post('/switchRestaurant',switchRestaurant)
+router.post('/switchRestaurant', auth, isUser, switchRestaurant)
 
-router.delete("/removeOneFromCart",removeOneFromCart)
+router.delete("/removeOneFromCart", auth, isUser, removeOneFromCart)
 
-router.delete("/removeFromCart",removeFromCart)
+router.delete("/removeFromCart",auth, isUser, removeFromCart)
 
-router.get("/getAddedItemsInCart/:id",getAddedItemsInCartByUser)
+router.get("/getAddedItemsInCart/:id",auth, isUser, getAddedItemsInCartByUser)
 
 module.exports = router;

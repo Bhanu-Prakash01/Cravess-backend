@@ -8,8 +8,6 @@ const RestaurantDetails = require('../models/restaurantDetailsModel');
 const UserDetails = require('../models/userDetailsSchema');  
 exports.userAuth = async (req, res) => {
   const { email, phoneNumber, name, otp, role, additionalDetail } = req.body;
-
-  // Validation checks
   if (!email && !phoneNumber) {
     return res.status(400).json({
       success: false,
@@ -25,26 +23,19 @@ exports.userAuth = async (req, res) => {
   }
 
   try {
-    // Find the most recent OTP for the email or phoneNumber
-    const response = await OTP.findOne({ $or: [{ email }, { phoneNumber }] })
-      .sort({ createdAt: -1 });
-
+    const response = await OTP.findOne({ phone: phoneNumber, otp:otp });
     if (!response || otp !== response.otp) {
-      // OTP not found or doesn't match
       return res.status(400).json({
         success: false,
         message: "The OTP is not valid.",
       });
     }
-
-    // Delete the OTP after successful validation
     await OTP.findByIdAndDelete(response._id);
 
     // Find the user by phoneNumber
     let user = await userSchema.findOne({ phone: phoneNumber });
-
-    const token = jwt.sign({ role: user?.role || role }, process.env.JWT_SECRET_KEY, {
-      expiresIn: '1h' // expires in 1 hour
+    const token = jwt.sign({ role: user?.role || role, phoneNumber: user?.phone || phoneNumber, email: user?.email || email }, process.env.JWT_SECRET_KEY, {
+      expiresIn: '12h' // expires in 12h
     });
 
     if (user) {
@@ -81,17 +72,12 @@ exports.userAuth = async (req, res) => {
         });
       }
 
-      console.log("Role-specific additional details data:", additionalDetailsData);
-      // User doesn't exist, create a new one
       user = new userSchema({
         phone: phoneNumber,
         role,
         email: email || "NA",
         userName: name || "NA",
-        city: "NA",
-        country: "NA",
-        addressLine1: "NA",
-        image: "https://thumbs.dreamstime.com/b/happy-cheaf-fried-chicken-vector-illustration-vector-illustration-happy-cheaf-fried-chicken-eps-112535209.jpg",
+        image: "NA",
         additionalDetail: additionalDetailsData,
       });
 
@@ -156,7 +142,7 @@ exports.sendOtp = async (req, res) => {
   const { phoneNumber } = req.body;
   try {
     // Validate phone number
-    if (!phoneNumber || !/^\d{10}$/.test(phoneNumber)) {
+    if (!phoneNumber) {
       return res.status(400).json({ error: 'Invalid phone number' });
     }
     // Generate OTP
