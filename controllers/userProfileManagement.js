@@ -29,7 +29,6 @@ exports.updateUser = async (req, res) => {
 
     if(user.role === "DeliveryAgent"){
       const agentDetails = await DeliveryAgentDetails.findById({_id:user.additionalDetail});
-      console.log(agentDetails,"agent Details");
       agentDetails.agent_name = userName;
       await agentDetails.save();
     }
@@ -83,7 +82,6 @@ exports.addUserAddress = async (req, res) => {
     await newAddress.save();
 
     let userDetails = await UserDetails.findById(user.additionalDetail);
-    console.log(userDetails,"userDetails");
     if (!userDetails) {
       userDetails = new UserDetails({
         addresses: [newAddress._id],
@@ -195,7 +193,6 @@ exports.deleteAllAddressByUser = async (req, res) => {
     // Find the user by their ID
     const user = await User.findById(userId);
     const userDetails = await UserDetails.findById(user.additionalDetail);
-    console.log(userDetails,"userDetails");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }

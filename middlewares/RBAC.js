@@ -66,9 +66,6 @@ exports.isRestaurant = async (req, res, next) => {
   try {
     console.log(req.user.phoneNumber);
     const userDetails = await User.findOne({ phone: req.user.phoneNumber });
-    console.log(userDetails,"userDetails");
-
-    console.log(userDetails.role,"userDetails.role");
 
     if (userDetails.role !== "Restaurant") {
       return res.status(401).json({
@@ -87,9 +84,6 @@ exports.isRestaurant = async (req, res, next) => {
 exports.isDeliveryAgent = async (req, res, next) => {
   try {
     const userDetails = await User.findOne({ phone: req.user.phoneNumber });
-    console.log(userDetails);
-
-    console.log(userDetails.role);
 
     if (userDetails.role !== "DeliveryAgent") {
       return res.status(401).json({

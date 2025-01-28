@@ -219,7 +219,6 @@ exports.updateOrder = async (req, res) => {
 exports.cancelOrder = async (req, res) => {
   try {
     const {userId} = req.body;
-    console.log(userId,"userId");
     const orderId = req.params.id;
     const order = await Order.findById(orderId);
 
@@ -227,7 +226,6 @@ exports.cancelOrder = async (req, res) => {
       return res.status(404).json({ error: "Order not found" });
     }
     const user = await User.findById(userId);
-    console.log(user);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -556,7 +554,6 @@ exports.removeOneFromCart = async (req, res) => {
 exports.removeFromCart = async (req, res) => {
   try {
     const { userId, dishId } = req.body;
-   console.log(userId,dishId);
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
