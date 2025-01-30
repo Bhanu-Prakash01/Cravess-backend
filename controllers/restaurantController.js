@@ -2,7 +2,11 @@ const RestaurantDetails = require("../models/restaurantDetailsModel");
 const AccountDetails = require("../models/BankDetailsModel");
 const User = require("../models/userModel");
 const Dish = require("../models/dishSchema")
+const Order = require("../models/orderSchema");
+const DeliveryAgent = require("../models/DeliveryAgentDetails");
 const { uploadMultiDocuments, uploadSingleDocument } = require("../Utils/Cloudinary");
+const { findNearestAgent, assignAgentWithTimeout } = require("../Helper/assignAgents");
+
 const validateFields = (fields, requiredFields) => {
   for (const field of requiredFields) {
     if (!fields[field]) {
@@ -64,11 +68,11 @@ exports.addRestaurantDetails = async (req, res) => {
     }
 
 
-    const folderName =  'restaurant-documents';
+    const folderName = 'restaurant-documents';
     const documentUrl = await uploadMultiDocuments(document, folderName, userId);
-  if (!documentUrl) {
-    return res.status(400).json({ error: 'No document uploaded or failed to upload document' });
-  }
+    if (!documentUrl) {
+      return res.status(400).json({ error: 'No document uploaded or failed to upload document' });
+    }
 
     // Create new RestaurantDetails
     const newRestaurant = new RestaurantDetails({
@@ -101,16 +105,16 @@ exports.addRestaurantDetails = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-if (!user.additionalDetail || typeof user.additionalDetail !== "object") {
-  user.additionalDetail = {};
-}
+    if (!user.additionalDetail || typeof user.additionalDetail !== "object") {
+      user.additionalDetail = {};
+    }
 
-user.additionalDetail = {
-  ...user.additionalDetail,
-  restaurantId: savedRestaurant._id,
-};
+    user.additionalDetail = {
+      ...user.additionalDetail,
+      restaurantId: savedRestaurant._id,
+    };
 
-user.image = imgUrl;
+    user.image = imgUrl;
 
 
     await user.save();
@@ -132,7 +136,7 @@ exports.getRestaurantDetailsById = async (req, res) => {
     if (!restaurant) {
       return res.status(404).json({ error: "Restaurant not found" });
     }
-    res.status(200).json({success: true, message: "Restaurant details fetched successfully", data: restaurant });
+    res.status(200).json({ success: true, message: "Restaurant details fetched successfully", data: restaurant });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -153,18 +157,18 @@ exports.updateRestaurantProfile = async (req, res) => {
     availabilityStatus,
     location,
     // dishes,
-    discounts,  
-    img,  
-    openingTime,  
-    closingTime,  
+    discounts,
+    img,
+    openingTime,
+    closingTime,
   } = req.body;
 
   const validationError = validateFields(req.body, [
     "restaurantDetails",
     "document",
     // "location",
-    "openingTime", 
-    "closingTime", 
+    "openingTime",
+    "closingTime",
   ]);
   if (validationError) {
     return res.status(400).json({ error: validationError });
@@ -189,11 +193,11 @@ exports.updateRestaurantProfile = async (req, res) => {
       pincode
     }
     // Update document
-    const folderName =  'restaurant-documents-updated';
+    const folderName = 'restaurant-documents-updated';
     const documentUrl = await uploadDocuments(document, folderName, restaurantId);
-  if (!documentUrl) {
-    return res.status(400).json({ error: 'No document uploaded or failed to upload document' });
-  }
+    if (!documentUrl) {
+      return res.status(400).json({ error: 'No document uploaded or failed to upload document' });
+    }
     restaurant.document = documentUrl;
 
     // Update account details
@@ -244,7 +248,7 @@ exports.changeAvailabilityStatus = async (req, res) => {
 
     // Find the restaurant by ID
     const restaurant = await RestaurantDetails.findById(restaurantId);
-    
+
     if (!restaurant) {
       return res.status(404).json({ message: 'Restaurant not found' });
     }
@@ -270,7 +274,7 @@ exports.changeAvailabilityStatus = async (req, res) => {
 exports.getAllRestaurants = async (req, res) => {
   try {
     const restaurants = await RestaurantDetails.find();
-    res.status(200).json({ success: true, message: 'Restaurants fetched successfully', data: restaurants});
+    res.status(200).json({ success: true, message: 'Restaurants fetched successfully', data: restaurants });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -278,7 +282,7 @@ exports.getAllRestaurants = async (req, res) => {
 
 // Add a new dish
 exports.addDish = async (req, res) => {
-  const { restaurant, dishName, price, description, available, dishType, category,image } = req.body;
+  const { restaurant, dishName, price, description, available, dishType, category, image } = req.body;
 
   try {
     const folder = 'dish-images';
@@ -286,22 +290,22 @@ exports.addDish = async (req, res) => {
     if (!imgUrl) {
       return res.status(400).json({ error: 'No image uploaded or failed to upload image' });
     }
-      const newDish = new Dish({
-          restaurant,
-          dishName,
-          price,
-          description,
-          available,
-          dishType,
-          category,
-          image: imgUrl
-      });
-     
+    const newDish = new Dish({
+      restaurant,
+      dishName,
+      price,
+      description,
+      available,
+      dishType,
+      category,
+      image: imgUrl
+    });
 
-      await newDish.save();
-      res.status(201).json({ success: true, message: 'Dish created successfully', data: newDish });
+
+    await newDish.save();
+    res.status(201).json({ success: true, message: 'Dish created successfully', data: newDish });
   } catch (err) {
-      res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -310,31 +314,31 @@ exports.updateDish = async (req, res) => {
   const { dishName, price, description, available, dishType, category, image } = req.body;
 
   try {
-      const dish = await Dish.findById(id);
-      if (!dish) {
-          return res.status(404).json({ error: 'Dish not found' });
+    const dish = await Dish.findById(id);
+    if (!dish) {
+      return res.status(404).json({ error: 'Dish not found' });
+    }
+
+    dish.dishName = dishName;
+    dish.price = price;
+    dish.description = description;
+    dish.available = available;
+    dish.dishType = dishType;
+    dish.category = category;
+
+    if (image) {
+      const folder = 'dish-images';
+      const imgUrl = await uploadSingleDocument(image, folder, dish.restaurant);
+      if (!imgUrl) {
+        return res.status(400).json({ error: 'No image uploaded or failed to upload image' });
       }
+      dish.image = imgUrl;
+    }
 
-      dish.dishName = dishName;
-      dish.price = price;
-      dish.description = description;
-      dish.available = available;
-      dish.dishType = dishType;
-      dish.category = category;
-
-      if (image) {
-        const folder = 'dish-images';
-        const imgUrl = await uploadSingleDocument(image, folder, dish.restaurant);
-        if (!imgUrl) {
-          return res.status(400).json({ error: 'No image uploaded or failed to upload image' });
-        }
-        dish.image = imgUrl;
-      }
-
-      await dish.save();
-      res.status(200).json({ success: true, message: 'Dish updated successfully', data: dish });
+    await dish.save();
+    res.status(200).json({ success: true, message: 'Dish updated successfully', data: dish });
   } catch (err) {
-      res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message });
   }
 }
 
@@ -343,64 +347,167 @@ exports.getDishesByRestaurant = async (req, res) => {
   const { restaurantId } = req.params;
   const { category } = req.query;
   try {
-      const dishes = await Dish.find({
-        $and: [
-          { restaurant: restaurantId },
-          { category: category ? category : { $exists: true } },
-        ],
-      });
-      res.status(200).json({ success: true, message: 'Dishes fetched successfully',data: dishes});
+    const dishes = await Dish.find({
+      $and: [
+        { restaurant: restaurantId },
+        { category: category ? category : { $exists: true } },
+      ],
+    });
+    res.status(200).json({ success: true, message: 'Dishes fetched successfully', data: dishes });
   } catch (err) {
-      res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message });
   }
 };
 
 exports.getDishById = async (req, res) => {
   const { id } = req.params;
   try {
-      const dish = await Dish.findById(id);
-      const restaurant = await RestaurantDetails.findById(dish.restaurant);
-      
-      const restaurantName = restaurant?.restaurantDetails?.restaurantName;
-      if (!dish) {
-          return res.status(404).json({ error: 'Dish not found' });
-      }
-      const dishDetails = {
-        ...dish._doc,
-        restaurantName: restaurantName
-      }
-      res.status(200).json({ success: true, message: 'Dish fetched successfully', data: dishDetails });
+    const dish = await Dish.findById(id);
+    const restaurant = await RestaurantDetails.findById(dish.restaurant);
+
+    const restaurantName = restaurant?.restaurantDetails?.restaurantName;
+    if (!dish) {
+      return res.status(404).json({ error: 'Dish not found' });
+    }
+    const dishDetails = {
+      ...dish._doc,
+      restaurantName: restaurantName
+    }
+    res.status(200).json({ success: true, message: 'Dish fetched successfully', data: dishDetails });
   } catch (err) {
-      res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message });
   }
 }
 
 exports.deleteDishesById = async (req, res) => {
   const { id } = req.params;
   try {
-      await Dish.findByIdAndDelete(id);
-      res.status(200).json({ success: true, message: 'Dish deleted successfully' });
+    await Dish.findByIdAndDelete(id);
+    res.status(200).json({ success: true, message: 'Dish deleted successfully' });
   } catch (err) {
-      res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message });
   }
 };
 
 exports.getAllDishes = async (req, res) => {
   const { category, dishName, dishType } = req.query;
   try {
-      // const dishes = await Dish.find();
-      const dishes = await Dish.find({
-        $and: [
-          { category: category ? category : { $exists: true } },
-          { dishName: dishName ? { $regex: dishName, $options: 'i' } : { $exists: true } },
-          { dishType: dishType ? dishType : { $exists: true } },
-        ],
-      });
-  
-      res.status(200).json({ success: true, message: 'Dishes fetched successfully', data: dishes });
+    // const dishes = await Dish.find();
+    const dishes = await Dish.find({
+      $and: [
+        { category: category ? category : { $exists: true } },
+        { dishName: dishName ? { $regex: dishName, $options: 'i' } : { $exists: true } },
+        { dishType: dishType ? dishType : { $exists: true } },
+      ],
+    });
+
+    res.status(200).json({ success: true, message: 'Dishes fetched successfully', data: dishes });
   } catch (err) {
-      res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getAllOrderReceived = async (req, res) => {
+  try {
+    const restaurantId = req.params.id;
+    const restaurant = await User.findById({_id:restaurantId});
+    const orders = await Order.find({ orderStatus: "Placed", "items.restaurant": restaurant.additionalDetail?.restaurantId, }).select("-__v  -estimatedDeliveryTime -deliveryDetails");
+    res.status(200).json({ success: true, message: "Orders fetched successfully", data: orders });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getAllOrdersByRestaurant = async (req, res) => {
+  try {
+    const restaurantId = req.params.id;
+    const restaurant = await User.findById({_id:restaurantId});
+    const orders = await Order.find({ "items.restaurant": restaurant.additionalDetail?.restaurantId }).select("-__v  -estimatedDeliveryTime -deliveryDetails");
+    res.status(200).json({ success: true, message: "Orders fetched successfully", data: orders });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+exports.acceptOrDeclineOrder = async (req, res) => {
+  const { orderId } = req.params;
+  const { restaurantId, decision } = req.body; // decision: "Accepted" or "Cancelled"
+  try {
+    const order = await Order.findById({_id:orderId});
+    if (!order) return res.status(404).json({ error: "Order not found." });
+    if (order.items[0]?.restaurant?.toString('hex') !== restaurantId) {
+      return res.status(403).json({ error: "Unauthorized access. Order does not belong to this restaurant." });
+    }
+    if (order.orderStatus !== "Placed") {
+      return res.status(400).json({ error: "Order is already processed or not placed" });
+    }
+
+    if (decision === "Accepted") {
+      order.orderStatus = "Accepted";
+      await order.save();
+      await assignDeliveryAgent(orderId);
+      res.json({ success: true, message: "Order accepted successfully.Assigning Delivery Agent." });
+    } else if (decision === "Cancelled") {
+      order.orderStatus = "Cancelled";
+      await order.save();
+      res.json({ success: true, message: "Order declined by restaurant." });
+    } else {
+      res.status(400).json({ error: "Invalid decision." });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const assignDeliveryAgent = async (orderId) => {
+  try {
+    const order = await Order.findById({ _id: orderId }).populate("deliveryDetails.deliveryAddress");
+    if (!order || order.orderStatus !== "Accepted") {
+      return { error: "Order is not ready for assignment." };
+    }
+    order.orderStatus = "Assigning";
+    await order.save();
+
+    const availableAgentIds = await DeliveryAgent.find(
+      { availabilityStatus: "Available" },
+      { _id: 1 } 
+    ).lean();
+
+    if (availableAgentIds.length === 0) {
+      return { error: "No available agents." };
+    }
+    const agentIds = availableAgentIds.map(agent => agent._id);
+    const nearestAgentId = await findNearestAgent(agentIds, order.deliveryDetails.deliveryAddress.location);
+
+    if (!nearestAgentId) {
+      return { error: "No available agents." };
+    }
+    await assignAgentWithTimeout(order, nearestAgentId);
+
+    return { success: true, message: "Assigning delivery agent..." };
+  } catch (err) {
+    console.error("Error in assignDeliveryAgent:", err);
+    return { error: err.message };
   }
 };
 
 
+exports.handedOverOrder = async (req, res) => {
+  const { orderId } = req.body;
+  try {
+    const order = await Order.findById({_id:orderId});
+    if (!order) return res.status(404).json({ error: "Order not found." });
+
+    if (order.orderStatus !== "Processing") {
+      return res.status(400).json({ error: "Order is not ready for dispatching." });
+    }
+
+    order.orderStatus = "Dispatched";
+    await order.save();
+    return res.status(200).json({ success: true, message: "Order handed over successfully." });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+
+
+};

@@ -4,21 +4,21 @@ const ratingAndReviewSchema = new mongoose.Schema({
 	userId: {
 		type: mongoose.Schema.Types.ObjectId,
 		required: true,
-		ref: "User",
+		ref: "users",
 	},
 	orderId: {
 		type: mongoose.Schema.Types.ObjectId,
 		required: true,
-		ref: "Order",
-	  },
-	  restaurantId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "RestaurantDetails", // Reference to the restaurant being reviewed
-    },
-    deliveryAgentId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "DeliveryAgent", // Reference to the delivery agent being reviewed
-    },
+		ref: "orders",
+	},
+	restaurantId: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "RestaurantDetails", // Reference to the restaurant being reviewed
+	},
+	deliveryAgentId: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "DeliveryAgentDetails", // Reference to the delivery agent being reviewed
+	},
 	dishId: {
 		type: mongoose.Schema.Types.ObjectId,
 		ref: "dishes",

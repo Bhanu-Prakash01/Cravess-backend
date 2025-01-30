@@ -73,6 +73,8 @@ const restaurantDetailsSchema = new mongoose.Schema({
             message: "Invalid value for current_rating. Must be a valid number.",
           },
     },
+    totalProducts:Number,
+    totalSales:Number,
     createdAt: {
         type: Date,
         default: Date.now,

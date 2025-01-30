@@ -59,7 +59,7 @@ exports.getUserById = async (req, res) => {
 
 exports.addUserAddress = async (req, res) => {
   try {
-    const {userId, name,phoneNumber, addressLine1, addressLine2, landmark, city, state, pincode } = req.body;
+    const {userId, name,phoneNumber, addressLine1, addressLine2, landmark, city, state, pincode, location } = req.body;
     const user = await User.findById(userId);
     
     if (!user) {
@@ -77,6 +77,7 @@ exports.addUserAddress = async (req, res) => {
       city,
       state,
       pincode,
+      location,
       user: userId,
     });
     await newAddress.save();
@@ -115,7 +116,7 @@ exports.addUserAddress = async (req, res) => {
 exports.updateUserAddress = async (req, res) => {
   try {
     const addressId = req.params.addressId;
-    const { userId, name, phoneNumber, addressLine1, addressLine2, landmark, city, state, pincode } = req.body;
+    const { userId, name, phoneNumber, addressLine1, addressLine2, landmark, city, state, pincode, location } = req.body;
 
     // Find the user by their ID
     const user = await User.findById(userId);
@@ -138,6 +139,7 @@ exports.updateUserAddress = async (req, res) => {
     address.city = city;
     address.state = state;
     address.pincode = pincode;
+    address.location = location;
     // Save the updated address
     const updatedAddress = await address.save();
     // Respond with the updated address details

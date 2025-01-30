@@ -14,8 +14,11 @@ const {
   getDishById,
   getAllRestaurants,
   deleteDishesById,
- 
-  updateDish
+  updateDish,
+  handedOverOrder,
+  getAllOrdersByRestaurant,
+  getAllOrderReceived,
+  acceptOrDeclineOrder
 } = require("../controllers/restaurantController");
 const { auth, isRestaurant } = require("../middlewares/RBAC");
 
@@ -47,6 +50,14 @@ router.get("/getDishById/:id",getDishById);
 
 router.delete("/deleteDishes/:id",auth, isRestaurant, deleteDishesById);
 
+// order related
 
+router.get("/getAllOrderReceived/:id",auth, isRestaurant, getAllOrderReceived);
+
+router.get("/getAllOrdersByRestaurant/:id",auth, isRestaurant, getAllOrdersByRestaurant);
+
+router.post("/acceptOrDeclineOrder/:orderId",auth, isRestaurant, acceptOrDeclineOrder);
+
+router.post("/handOverOrder",auth, isRestaurant, handedOverOrder);
 
 module.exports = router;

@@ -109,6 +109,7 @@ const deliveryAgentDetailsSchema = new mongoose.Schema({
     //   message: "Date of birth should be a valid date.",
     // },
   },
+  requestedOrders: [{ type: mongoose.Schema.Types.ObjectId, ref: 'orders' }],
   createdAt: {
     type: Date,
     default: Date.now,
@@ -117,6 +118,15 @@ const deliveryAgentDetailsSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  ordersAccepted: [mongoose.Schema.Types.ObjectId], // Or just count
+  ordersDelivered: [mongoose.Schema.Types.ObjectId], // Or just count
+  totalEarnings: { type: Number, default: 0 },
+  dailyEarnings: { type: Number, default: 0 },
+  monthlyEarnings: { type: Number, default: 0 },
+  earningsHistory: [{
+    date: { type: Date, default: Date.now },
+    earnings: Number,
+  }],
 });
 
 module.exports = mongoose.model(

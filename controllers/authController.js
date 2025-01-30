@@ -147,7 +147,6 @@ exports.sendOtp = async (req, res) => {
     }
     // Generate OTP
     const otp = Math.floor(1000 + Math.random() * 9000);
-    console.log(phoneNumber,"phoneNumber");
     const existingOtp = await OTP.findOne({ phone: phoneNumber });
     if (existingOtp) {
       const updatedOtp = await OTP.findByIdAndUpdate(existingOtp._id, { otp, expiresAt: Date.now() + 300000 }, { new: true });
