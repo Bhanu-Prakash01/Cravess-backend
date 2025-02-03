@@ -17,6 +17,7 @@ const ratingAndReview =require('./routes/ratingAndReviewsRoutes')
 const support =require('./routes/supportRoute')
 const discountRoutes=require("./routes/dynamicPricingAndDiscountRoutes")
 const delieveryAgentRoutes = require("./routes/deliveryAgentRoutes")
+const adminRoutes = require("./routes/adminRoutes")
 const app = express();
 
 
@@ -58,6 +59,7 @@ app.use('/api/v1/discounts',discountRoutes);
 
 app.use('/api/v1/admin/loyalty-and-rewards',LoyaltyAndRewards)
 app.use('/api/v1/agent', delieveryAgentRoutes);
+app.use('/api/v1/admin',adminRoutes)
 
 app.get("/", (req, res) => {
   res.status(200).json({

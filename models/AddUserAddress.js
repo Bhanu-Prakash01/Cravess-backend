@@ -42,6 +42,17 @@ const AddNewAddress = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  location: {
+    type: {
+        type: String,
+        enum: CONSTANTS.ENUM.LOCATION,
+        // required: true,
+    },
+    coordinates: {
+        type: [Number],
+        // required: true,
+    },
+},
   createdAt: {
     type: Date,
     default: Date.now

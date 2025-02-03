@@ -8,6 +8,8 @@ const userDetailsSchema = new mongoose.Schema({
       ref: "UserAddresses",
     },
   ],
+  totalOrders : Number,
+  totalAmountSpent : Number,
   preferences: [String],
   loyaltyPoints: Number, 
   favoriteRestaurants: [

@@ -1,8 +1,11 @@
 const DeliveryAgentDetails = require("../models/DeliveryAgentDetails");
 const AccountDetails = require("../models/BankDetailsModel");
 const User = require("../models/userModel");
+const Order = require("../models/orderSchema");
 const moment = require("moment"); // Ensure moment is installed
 const { uploadMultiDocuments, uploadSingleDocument } = require("../Utils/Cloudinary");// Helper function to validate required fields
+const { findNearestAgent, assignAgentWithTimeout } = require("../Helper/assignAgents");
+
 const validateFields = (fields, requiredFields) => {
   for (const field of requiredFields) {
     if (!fields[field]) {
@@ -241,7 +244,6 @@ exports.updateDeliveryAgentProfile = async (req, res) => {
   }
 };
 
-
 exports.changeAvailabilityStatus = async (req, res) => {
   const { availabilityStatus } = req.body;
   try {
@@ -264,6 +266,106 @@ exports.changeAvailabilityStatus = async (req, res) => {
     res.status(500).json({ message: 'An error occurred while updating the availability status' });
   }
 };
+
+exports.getOrderRequestByAgentId = async (req, res) => {
+  const { agentId } = req.params;
+  try {
+    const agent = await User.findById({_id:agentId});
+    const agentDetails = await DeliveryAgentDetails.findById({_id:agent.additionalDetail}).populate('requestedOrders');
+    if (!agentDetails) {
+      return res.status(404).json({ error: "Agent not found." });
+    }
+
+    // Send the agent's orders as the response
+    res.status(200).json({
+      success: true,
+      message: "Orders fetched successfully",
+      data: agentDetails.requestedOrders,  // Send the orders assigned to this agent
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+exports.agentAcceptOrDecline = async (req, res) => {
+  const { orderId, agentId, decision } = req.body; // decision: "Accepted" or "Declined"
+
+  try {
+    const agent = await User.findById({_id:agentId});
+    const order = await Order.findById({_id:orderId}).populate("deliveryDetails.deliveryAddress");
+    if (!order || order.orderStatus !== "Assigning") {
+      return res.status(400).json({ error: "Order is not available for assignment." });
+    }
+
+    if (decision === "Accepted") {
+      order.orderStatus = "Processing";
+      order.assignedAgent = agentId;
+      await order.save();
+      await DeliveryAgentDetails.findByIdAndUpdate({_id:agent.additionalDetail}, {
+        availabilityStatus: "Unavailable",
+        $push: { assignedOrders: orderId },
+        $pull: { requestedOrders: orderId },
+      });
+
+      await DeliveryAgentDetails.updateMany(
+        { _id: { $ne: agent.additionalDetail } }, 
+        { $pull: { requestedOrders: orderId } }
+      );
+
+      res.json({ success: true, message: "Order assigned successfully." });
+
+    } else if (decision === "Declined") {
+      await DeliveryAgentDetails.findByIdAndUpdate({_id:agent.additionalDetail}, {
+        $pull: { requestedOrders: orderId },
+      });
+
+      const nextAgent = await findNearestAgent(
+        await DeliveryAgentDetails.find({ availabilityStatus: "Available", _id: { $ne: agent.additionalDetail } }),
+        order.deliveryDetails.deliveryAddress.location
+      );
+
+      if (nextAgent) {
+        assignAgentWithTimeout(order, nextAgent);
+        res.json({ success: true, message: "Reassigning order to next agent..." });
+      } else {
+        res.json({ error: "No agents available." });
+      }
+    } else {
+      res.status(400).json({ error: "Invalid decision." });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.confirmOrderDelivery = async (req, res) => {
+  const { orderId, agentId } = req.body;
+
+  try {
+    const agent = await User.findById({_id:agentId});
+    const order = await Order.findById({_id:orderId});
+    if (!order || order.orderStatus !== "Dispatched") {
+      return res.status(400).json({ error: "Order is not ready for delivery confirmation." });
+    }
+    if (order.assignedAgent !== agentId) {
+      return res.status(403).json({ error: "Unauthorized agent." });
+    }
+    order.orderStatus = "Delivered";
+    await order.save();
+
+    await DeliveryAgentDetails.findByIdAndUpdate({_id:agent.additionalDetail}, { 
+      availabilityStatus: "Available", 
+      $pull: { assignedOrders: orderId } 
+    });
+    res.json({ success: true, message: "Order delivered successfully." });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 
 
 

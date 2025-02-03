@@ -72,7 +72,7 @@ exports.awardPoints = async (userId, amountSpent) => {
     }
 
     // Check if UserDetails exists for the user, else create it
-    let userDetails = await UserDetails.findOne({ user: userId });
+    let userDetails = await UserDetails.findOne({ _id: user.additionalDetail});
 
     if (!userDetails) {
       userDetails = new UserDetails({

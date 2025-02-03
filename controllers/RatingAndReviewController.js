@@ -38,7 +38,8 @@ exports.createReview = async (req, res) => {
             ratingDish,
             reviewText,
             restaurantId,
-            deliveryAgentId
+            deliveryAgentId,
+            dishId
         });
 
        
@@ -108,3 +109,30 @@ exports.createReview = async (req, res) => {
     }
 };
 
+exports.getAllRatingAndReviews = async (req, res) => {
+    try {
+        const reviews = await Review.find()
+        .populate('userId', 'userName') 
+        .populate('restaurantId', 'restaurantDetails.restaurantName')
+        .populate('dishId', 'dishName')
+        .exec();
+      const reviewsWithAdditionalInfo = reviews.map(review => {
+        const averageRating = (review.ratingDeliveryAgent + review.ratingRestaurant + review.ratingDish) / 3;
+        return {
+          userName: review.userId.userName,
+          restaurantName: review.restaurantId.restaurantDetails.restaurantName,
+          dishName: review.dishId.dishName,
+          averageRating,
+          ratingDeliveryAgent: review.ratingDeliveryAgent,
+          ratingRestaurant: review.ratingRestaurant,
+          ratingDish: review.ratingDish,
+          createdAt: review.createdAt,
+          reviewText: review.reviewText
+        };
+      });
+  
+      res.status(200).json({ success: true, message: 'Reviews fetched successfully', data: reviewsWithAdditionalInfo });
+    } catch (error) {
+        res.status(500).json({ error: 'An error occurred while processing the request', details: error.message });
+    }
+}

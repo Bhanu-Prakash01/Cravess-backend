@@ -32,7 +32,7 @@ const customerInfoSchema = new mongoose.Schema({
 const deliveryDetailsSchema = new mongoose.Schema({
   deliveryAddress: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "UserAddresses",
+    ref: "userAddresses",
     required: true,
   },
 

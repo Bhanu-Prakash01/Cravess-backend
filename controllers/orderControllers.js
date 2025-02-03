@@ -12,6 +12,7 @@ const Cart = require("../models/CartModel");
 const calculateDistance = require("../Utils/CalculateDistance");
 const DeliveryAgent = require("../models/DeliveryAgentDetails");
 const CONSTANTS = require("../constants/constants");
+const { findNearestAgent, assignAgentWithTimeout } = require("../Helper/assignAgents");
 
 const getUserPoints = async (userId) => {
   try {
@@ -62,7 +63,7 @@ exports.placeOrder = async (req, res) => {
     if (!address) {
       return res.status(400).json({ error: "Invalid delivery address." });
     }
-    
+
     // Process each item and apply offer
     const processedItems = await Promise.all(
       items.map(async (item) => {
@@ -82,55 +83,64 @@ exports.placeOrder = async (req, res) => {
       })
     );
     finalPrice = totalPrice;
- 
-if (couponCode) {
-  const coupon = await Coupon.findOne({ code: couponCode, restaurantId: items[0].restaurant });
-  if (coupon) {
-    const currentDate = new Date();
-    if (currentDate >= coupon.validFrom && currentDate <= coupon.validUntil) {
-      if (totalPrice >= coupon.minOrderValue) {
-        let discountAmount=0;
-        if (coupon.discountType === 'Percentage') {
-          discountAmount = (totalPrice * coupon.discountValue) / 100;
-        } else if (coupon.discountType === 'Flat') {
-          discountAmount = coupon.discountValue;
-        }
-        else{
-          return res.status(400).json({ error: "Invalid discount type." });
-        }
-        finalPrice = Math.max(finalPrice - discountAmount, 0);
-        appliedCoupon = { code: coupon.code, discountAmount };
-        // Check if the user has already redeemed the coupon
-        if (!coupon.redeemedUsers.includes(customer.user)) {
-          // Mark the coupon as redeemed for the user
-          await Coupon.updateOne({ code: couponCode }, { $push: { redeemedUsers: customer.user } });
+
+    if (couponCode) {
+      const coupon = await Coupon.findOne({ code: couponCode, restaurantId: items[0].restaurant });
+      if (coupon) {
+        const currentDate = new Date();
+        if (currentDate >= coupon.validFrom && currentDate <= coupon.validUntil) {
+          if (totalPrice >= coupon.minOrderValue) {
+            let discountAmount = 0;
+            if (coupon.discountType === 'Percentage') {
+              discountAmount = (totalPrice * coupon.discountValue) / 100;
+            } else if (coupon.discountType === 'Flat') {
+              discountAmount = coupon.discountValue;
+            }
+            else {
+              return res.status(400).json({ error: "Invalid discount type." });
+            }
+            finalPrice = Math.max(finalPrice - discountAmount, 0);
+            appliedCoupon = { code: coupon.code, discountAmount };
+            // Check if the user has already redeemed the coupon
+            if (!coupon.redeemedUsers.includes(customer.user)) {
+              // Mark the coupon as redeemed for the user
+              await Coupon.updateOne({ code: couponCode }, { $push: { redeemedUsers: customer.user } });
+            } else {
+              return res.status(400).json({ error: "You have already redeemed this coupon." });
+            }
+
+          } else {
+            return res.status(400).json({ error: "Minimum order value not met for this coupon." });
+          }
         } else {
-          return res.status(400).json({ error: "You have already redeemed this coupon." });
+          return res.status(400).json({ error: "Coupon is not valid or has expired." });
         }
-
       } else {
-        return res.status(400).json({ error: "Minimum order value not met for this coupon." });
+        return res.status(400).json({ error: "Invalid coupon code or coupon not available for this restaurant." });
       }
-    } else {
-      return res.status(400).json({ error: "Coupon is not valid or has expired." });
     }
-  } else {
-    return res.status(400).json({ error: "Invalid coupon code or coupon not available for this restaurant." });
-  }
-}
-     // Find an available delivery agent
-     const availableAgent = await DeliveryAgent.findOneAndUpdate(
-      { availabilityStatus: "Available" },
-      { availabilityStatus: "Unavailable" }, // Mark as busy
-      { new: true }
-    );
+    //  // Find an available delivery agent
+    //  const availableAgent = await DeliveryAgent.findOneAndUpdate(
+    //   { availabilityStatus: "Available" },
+    //   { availabilityStatus: "Unavailable" }, // Mark as busy
+    //   { new: true }
+    // );
 
-    if (!availableAgent) {
-      return res
-        .status(400)
-        .json({ error: "No delivery agent is available at the moment." });
-    }  
-     // Calculate estimated delivery time
+    // if (!availableAgent) {
+    //   return res
+    //     .status(400)
+    //     .json({ error: "No delivery agent is available at the moment." });
+    // }  
+
+    // **Find nearest available delivery agent using Ola Maps API**  ⭐ MODIFIED ⭐
+    //  const availableAgents = await DeliveryAgent.find({ availabilityStatus: "Available" });
+    //  if (!availableAgents.length) {
+    //    return res.status(400).json({ error: "No delivery agent is available at the moment." });
+    //  }
+
+    //  // **Sort agents by proximity using Ola Maps**  ⭐ NEW ⭐
+    //  const nearestAgent = await findNearestAgent(availableAgents, address.location);
+    // Calculate estimated delivery time
     //  const travelTime = await calculateDistance(
     //   availableAgent?.location, // Agent's location
     //   deliveryDetails?.deliveryAddress         // Customer's delivery address
@@ -146,24 +156,47 @@ if (couponCode) {
       totalPrice,
       discountedPrice: finalPrice,
       coupon: appliedCoupon,
-      paymentStatus: "Pending", 
+      paymentStatus: "Pending",
       deliveryDetails: {
         deliveryAddress: address._id,
         orderTime: new Date(),
       },
       orderStatus: "Placed",
-      assignedAgent: {
-        id: availableAgent._id,
-        name: availableAgent?.agent_name,
-        contact: availableAgent?.contact,
-      },
+      assignedAgent: null,
+      // assignedAgent: {
+      //   id: availableAgent._id,
+      //   name: availableAgent?.agent_name,
+      //   contact: availableAgent?.contact,
+      // },
       estimatedDeliveryTime: new Date(Date.now() + estimatedDeliveryTime * 60000),
+      // estimatedDeliveryTime:null
     });
 
     await newOrder.save();
 
+    // **Assign nearest agent and handle reassignment if no response**  ⭐ NEW ⭐
+    //  assignAgentWithTimeout(newOrder, nearestAgent);
+    // Find the UserDetails for the customer
+    const user = await User.findOne({ _id: customer.user });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const userDetails = await UserDetails.findOneAndUpdate(
+      { _id: user.additionalDetail },
+      {
+        $inc: {
+          totalOrders: 1,
+          totalAmountSpent: finalPrice,
+        },
+      },
+      { new: true }
+    );
+
+    if (!userDetails) {
+      return res.status(404).json({ error: "UserDetails not found" });
+    }
     if (customer && customer.user) {
-       await awardPoints(
+      await awardPoints(
         new mongoose.Types.ObjectId(customer.user),
         finalPrice
       );
@@ -172,7 +205,7 @@ if (couponCode) {
         message:
           "Order placed successfully, discounts applied, and points awarded.",
         data: newOrder,
-        
+
       });
     } else {
       res.status(201).json({
@@ -195,7 +228,7 @@ exports.trackOrder = async (req, res) => {
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
-    res.status(200).json({ success: true, message: "Order tracked successfully", data: order});
+    res.status(200).json({ success: true, message: "Order tracked successfully", data: order });
   } catch (error) {
     console.error("Error tracking order:", error);
     res.status(400).json({ error: error.message });
@@ -210,7 +243,7 @@ exports.updateOrder = async (req, res) => {
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
-    res.status(200).json({ success: true, message: "Order updated successfully", data: order});
+    res.status(200).json({ success: true, message: "Order updated successfully", data: order });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -218,7 +251,7 @@ exports.updateOrder = async (req, res) => {
 
 exports.cancelOrder = async (req, res) => {
   try {
-    const {userId} = req.body;
+    const { userId } = req.body;
     const orderId = req.params.id;
     const order = await Order.findById(orderId);
 
@@ -229,7 +262,7 @@ exports.cancelOrder = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    
+
     const currentTime = new Date();
     const orderCreationTime = order.createdAt;
 
@@ -244,7 +277,7 @@ exports.cancelOrder = async (req, res) => {
     }
 
     await Order.findByIdAndDelete(orderId);
-    res.status(200).json({ success: true,message: "Order Cancelled successfully" });
+    res.status(200).json({ success: true, message: "Order Cancelled successfully" });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -257,7 +290,7 @@ exports.getOrdersByUserId = async (req, res) => {
     if (!orders) {
       return res.status(404).json({ error: "Orders not found" });
     }
-    res.status(200).json({ success: true, message: "Orders fetched successfully", data: orders});
+    res.status(200).json({ success: true, message: "Orders fetched successfully", data: orders });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -319,74 +352,6 @@ exports.getOrdersByUserId = async (req, res) => {
 //   }
 // };
 
-
-// exports.addToCart = async (req, res) => {
-//   try {
-//     const { userId, dishId } = req.body;
-
-//     const user = await User.findById(userId);
-//     if (!user) {
-//       return res.status(404).json({ error: "User not found" });
-//     }
-
-//     const dish = await Dish.findById(dishId);
-//     if (!dish) {
-//       return res.status(404).json({ error: "Dish not found" });
-//     }
-
-//     // Get or create cart
-//     let cart = await Cart.findOne({ user: userId });
-//     if (!cart) {
-//       cart = new Cart({
-//         user: userId,
-//         items: [
-//           {
-//             dishId: dishId,
-//             quantity: 1,
-//             price: dish.price,
-//             dishName: dish.dishName, 
-//             restaurant: dish.restaurant,
-//           },
-//         ],
-//       });
-//       await cart.save();
-//       return res.status(200).json({ success: true, message: "Dish added to cart successfully" });
-//     }
-
-//     // Check if cart already has items from a different restaurant
-//     const isDifferentRestaurant = cart.items.some(
-//       (item) => item.restaurant.toString() !== dish.restaurant.toString()
-//     );
-
-//     if (isDifferentRestaurant) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Your cart contains items from a different restaurant. Do you want to switch?",
-//         conflict: true,
-//       });
-//     }
-//     const existingItemIndex = cart.items.findIndex(
-//       (item) => item.dishId.toString() === dishId
-//     );
-
-//     if (existingItemIndex !== -1) {
-//       cart.items[existingItemIndex].quantity += 1;
-//     } else {
-//       cart.items.push({
-//         dishId: dishId,
-//         quantity: 1,
-//         price: dish.price,
-//         dishName: dish.dishName,
-//         restaurant: dish.restaurant,
-//       });
-//     }
-
-//     await cart.save();
-//     res.status(200).json({ success: true, message: "Dish added to cart successfully", data: cart });
-//   } catch (error) {
-//     res.status(400).json({ error: error.message });
-//   }
-// };
 exports.addToCart = async (req, res) => {
   try {
     const { userId, dishId, quantity } = req.body; // Include quantity in the request body
@@ -540,7 +505,7 @@ exports.removeOneFromCart = async (req, res) => {
     if (cart.items[itemIndex].quantity > 1) {
       cart.items[itemIndex].quantity -= 1;
     } else {
-      cart.items.splice(itemIndex, 1); 
+      cart.items.splice(itemIndex, 1);
     }
 
     await cart.save();
@@ -564,7 +529,7 @@ exports.removeFromCart = async (req, res) => {
       return res.status(404).json({ error: "Dish not found" });
     }
 
-    const cart = await Cart.findOne({ user: userId });    
+    const cart = await Cart.findOne({ user: userId });
     if (!cart) {
       return res.status(404).json({ error: "Cart not found" });
     }
@@ -582,4 +547,4 @@ exports.removeFromCart = async (req, res) => {
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
-    }
+}
