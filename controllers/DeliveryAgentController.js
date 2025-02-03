@@ -1,6 +1,7 @@
 const DeliveryAgentDetails = require("../models/DeliveryAgentDetails");
 const AccountDetails = require("../models/BankDetailsModel");
 const User = require("../models/userModel");
+const mongoose = require('mongoose');
 const Order = require("../models/orderSchema");
 const moment = require("moment"); // Ensure moment is installed
 const { uploadMultiDocuments, uploadSingleDocument } = require("../Utils/Cloudinary");// Helper function to validate required fields
@@ -44,7 +45,7 @@ exports.createDeliveryAgent = async (req, res) => {
     aadharNumber,
     panNumber,
     dateOfBirth,
-    image 
+    image
   } = req.body;
 
   // Validate required fields
@@ -67,18 +68,21 @@ exports.createDeliveryAgent = async (req, res) => {
       return res.status(400).json({ error: `${field} is required.` });
     }
   }
-
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).session(session);
 
     if (!user) {
+      await session.abortTransaction();
       return res.status(404).json({ error: "User not found" });
     }
 
-    if(image){
+    if (image) {
       const folder = 'agent-images';
       const imgUrl = await uploadSingleDocument(image, folder, user._id);
       if (!imgUrl) {
+        await session.abortTransaction();
         return res.status(400).json({ error: 'No image uploaded or failed to upload image' });
       }
       user.image = imgUrl;
@@ -86,23 +90,26 @@ exports.createDeliveryAgent = async (req, res) => {
     // Ensure dateOfBirth is valid and formatted correctly
     const formattedDateOfBirth = moment(dateOfBirth, moment.ISO_8601, true);
     if (!formattedDateOfBirth.isValid()) {
+      await session.abortTransaction();
       return res.status(400).json({ error: "Invalid date format for date of birth" });
     }
     // Calculate age
     const age = moment().diff(formattedDateOfBirth, "years");
     if (age < 18) {
+      await session.abortTransaction();
       return res
         .status(400)
         .json({ error: "Agent must be at least 18 years old." });
     }
     // Save account details
     const newAccountDetails = new AccountDetails(accountDetails);
-    const savedAccountDetails = await newAccountDetails.save();
+    const savedAccountDetails = await newAccountDetails.save({ session });
 
     // for documents
     const folderName = 'agent-documents';
     const documentUrl = await uploadMultiDocuments(document, folderName, userId);
     if (!documentUrl) {
+      await session.abortTransaction();
       return res.status(400).json({ error: 'No document uploaded or failed to upload document' });
     }
 
@@ -138,19 +145,24 @@ exports.createDeliveryAgent = async (req, res) => {
       dateOfBirth: formattedDateOfBirth.toISOString(), // Save formatted date
     });
 
-    const savedAgent = await newAgent.save();   
+    const savedAgent = await newAgent.save({ session });
 
     // user.additionalDetail = user.additionalDetail || [];
-    user.additionalDetail= savedAgent._id;
+    user.additionalDetail = savedAgent._id;
     user.userName = agent_name;
-    await user.save();
+    await user.save({ session });
 
+    // Commit the transaction if everything is successful
+    await session.commitTransaction();
+    session.endSession();
     res.status(201).json({
       success: true,
       message: "Delivery agent created successfully",
       data: savedAgent,
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     res.status(400).json({ error: error.message });
   }
 };
@@ -163,10 +175,10 @@ exports.getDeliveryAgentDetailsById = async (req, res) => {
     const user = await User.findById(userId).populate({
       path: 'additionalDetail',
       select: '-agent_name -accountDetails -ratingAndReview -__v -createdAt -updatedAt -id -document'
-    });    if (!user) {
+    }); if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-   
+
     res.status(200).json({ success: true, message: "Delivery agent details fetched successfully", data: user });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -252,10 +264,10 @@ exports.changeAvailabilityStatus = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    const deliveryAgent = await DeliveryAgentDetails.findById({_id:user.additionalDetail}).select("-__v -document -accountDetails -assignedOrders -full_address -vehicleDetails -location -ratingAndReview -createdAt -updatedAt");
+    const deliveryAgent = await DeliveryAgentDetails.findById({ _id: user.additionalDetail }).select("-__v -document -accountDetails -assignedOrders -full_address -vehicleDetails -location -ratingAndReview -createdAt -updatedAt");
     if (!deliveryAgent) {
       return res.status(404).json({ message: 'Delivery agent not found' });
-    }else{
+    } else {
       deliveryAgent.availabilityStatus = availabilityStatus;
     }
 
@@ -270,8 +282,8 @@ exports.changeAvailabilityStatus = async (req, res) => {
 exports.getOrderRequestByAgentId = async (req, res) => {
   const { agentId } = req.params;
   try {
-    const agent = await User.findById({_id:agentId});
-    const agentDetails = await DeliveryAgentDetails.findById({_id:agent.additionalDetail}).populate('requestedOrders');
+    const agent = await User.findById({ _id: agentId });
+    const agentDetails = await DeliveryAgentDetails.findById({ _id: agent.additionalDetail }).populate('requestedOrders');
     if (!agentDetails) {
       return res.status(404).json({ error: "Agent not found." });
     }
@@ -292,8 +304,8 @@ exports.agentAcceptOrDecline = async (req, res) => {
   const { orderId, agentId, decision } = req.body; // decision: "Accepted" or "Declined"
 
   try {
-    const agent = await User.findById({_id:agentId});
-    const order = await Order.findById({_id:orderId}).populate("deliveryDetails.deliveryAddress");
+    const agent = await User.findById({ _id: agentId });
+    const order = await Order.findById({ _id: orderId }).populate("deliveryDetails.deliveryAddress");
     if (!order || order.orderStatus !== "Assigning") {
       return res.status(400).json({ error: "Order is not available for assignment." });
     }
@@ -302,21 +314,21 @@ exports.agentAcceptOrDecline = async (req, res) => {
       order.orderStatus = "Processing";
       order.assignedAgent = agentId;
       await order.save();
-      await DeliveryAgentDetails.findByIdAndUpdate({_id:agent.additionalDetail}, {
+      await DeliveryAgentDetails.findByIdAndUpdate({ _id: agent.additionalDetail }, {
         availabilityStatus: "Unavailable",
         $push: { assignedOrders: orderId },
         $pull: { requestedOrders: orderId },
       });
 
       await DeliveryAgentDetails.updateMany(
-        { _id: { $ne: agent.additionalDetail } }, 
+        { _id: { $ne: agent.additionalDetail } },
         { $pull: { requestedOrders: orderId } }
       );
 
       res.json({ success: true, message: "Order assigned successfully." });
 
     } else if (decision === "Declined") {
-      await DeliveryAgentDetails.findByIdAndUpdate({_id:agent.additionalDetail}, {
+      await DeliveryAgentDetails.findByIdAndUpdate({ _id: agent.additionalDetail }, {
         $pull: { requestedOrders: orderId },
       });
 
@@ -339,13 +351,35 @@ exports.agentAcceptOrDecline = async (req, res) => {
   }
 };
 
+exports.getAcceptedOrderDetails = async (req, res) => {
+  const { orderId } = req.params;
+  try {
+    const order = await Order.findById({ _id: orderId }).select('_id customer items totalPrice discountedPrice deliveryDetails orderStatus createdAt paymentStatus')
+      .populate({
+        path: 'deliveryDetails.deliveryAddress',
+        model: 'userAddresses'
+      })
+      .populate({
+        path: 'items.restaurant',
+        model: 'RestaurantDetails',
+        select: 'location full_restaurant_address'
+      })
+      .exec();
+    if (!order) {
+      return res.status(404).json({ error: "Order not found." });
+    }
+    res.status(200).json({ success: true, message: "Order details fetched successfully", data: order });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
 
 exports.confirmOrderDelivery = async (req, res) => {
   const { orderId, agentId } = req.body;
 
   try {
-    const agent = await User.findById({_id:agentId});
-    const order = await Order.findById({_id:orderId});
+    const agent = await User.findById({ _id: agentId });
+    const order = await Order.findById({ _id: orderId });
     if (!order || order.orderStatus !== "Dispatched") {
       return res.status(400).json({ error: "Order is not ready for delivery confirmation." });
     }
@@ -355,9 +389,9 @@ exports.confirmOrderDelivery = async (req, res) => {
     order.orderStatus = "Delivered";
     await order.save();
 
-    await DeliveryAgentDetails.findByIdAndUpdate({_id:agent.additionalDetail}, { 
-      availabilityStatus: "Available", 
-      $pull: { assignedOrders: orderId } 
+    await DeliveryAgentDetails.findByIdAndUpdate({ _id: agent.additionalDetail }, {
+      availabilityStatus: "Available",
+      $pull: { assignedOrders: orderId }
     });
     res.json({ success: true, message: "Order delivered successfully." });
 
@@ -366,6 +400,81 @@ exports.confirmOrderDelivery = async (req, res) => {
   }
 };
 
+exports.deliveryAgentDashboardCounts = async (req, res) => {
+   const  deliveryAgentId = req.params.id;
+  if (!mongoose.Types.ObjectId.isValid(deliveryAgentId)) {
+    return res.status(400).json({ error: 'Invalid delivery agent ID' });
+  }
+
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  try {
+    const [deliveredToday, cashCollectedToday, cashCollectedThisMonth] = await Promise.all([
+      Order.countDocuments({
+        assignedAgent: deliveryAgentId,
+        orderStatus: 'Delivered',
+        createdAt: { $gte: startOfDay }
+      }),
+
+      Order.aggregate([
+        {
+          $match: {
+            assignedAgent: deliveryAgentId,
+            orderStatus: 'Delivered',
+            paymentMode: 'Cash', 
+            createdAt: { $gte: startOfDay }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalCollected: { $sum: '$discountedPrice' }
+          }
+        }
+      ]),
+
+      // Total Amount Collected This Month (only 'Cash' payments)
+      Order.aggregate([
+        {
+          $match: {
+            assignedAgent: deliveryAgentId,
+            orderStatus: 'Delivered',
+            paymentMode: 'Cash',  // Filter only 'Cash' payments
+            createdAt: { $gte: startOfMonth }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalCollected: { $sum: '$discountedPrice' }
+          }
+        }
+      ])
+    ]);
+
+    console.log(deliveredToday,cashCollectedToday,cashCollectedThisMonth)
+
+    // Extract totals from aggregation results
+    const totalCashCollectedToday = cashCollectedToday[0]?.totalCollected || 0;
+    const totalCashCollectedThisMonth = cashCollectedThisMonth[0]?.totalCollected || 0;
+
+    // Sending response
+    res.json({
+      totalOrdersDeliveredToday: deliveredToday,
+      totalCashCollectedToday,
+      totalCashCollectedThisMonth
+    });
+
+  } catch (error) {
+    console.error('Error fetching delivery agent dashboard data:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
 
 
 

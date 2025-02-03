@@ -3,8 +3,9 @@ const router = express.Router()
 
 const {
     createOffer,
-    addOfferToDish,
-    removeOfferFromDish,
+    removeOfferFromDishes,
+    // addOfferToDish,
+    // removeOfferFromDish,
     createCoupon,
     updateCoupon,
     deleteCoupon,
@@ -18,11 +19,12 @@ const { auth, isRestaurant } = require("../middlewares/RBAC");
 // Route to create a new offer
 router.post("/createOffer", auth, isRestaurant, createOffer)
 
+router.post("/removeOfferFromDishes", auth, isRestaurant, removeOfferFromDishes)
 // Route to replace offers
-router.put('/offers/:offerId/restaurants/:restaurantId/dishes/:dishId', auth, isRestaurant, addOfferToDish);
+// router.put('/offers/:offerId/restaurants/:restaurantId/dishes/:dishId', auth, isRestaurant, addOfferToDish);
 
 // Route to delete the offers
-router.delete('/offers/:offerId/restaurants/:restaurantId/dishes/:dishId', auth, isRestaurant, removeOfferFromDish);
+// router.delete('/offers/:offerId/restaurants/:restaurantId/dishes/:dishId', auth, isRestaurant, removeOfferFromDish);
 
 // Route to create a new coupon
 router.post("/createCoupon",auth, isRestaurant, createCoupon)

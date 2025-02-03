@@ -5,10 +5,11 @@ const UserAddress = require("../models/AddUserAddress");
 const mongoose = require("mongoose");
 const { ObjectId } = mongoose.Types;
 const { awardPoints, redeemPoints } = require("./LoyaltyReward");
-const Offer = require("../models/OfferSchema")
-const Coupon = require("../models/CouponSchema")
+const Offer = require("../models/OfferSchema");
+const Coupon = require("../models/CouponSchema");
 const Dish = require("../models/dishSchema");
 const Cart = require("../models/CartModel");
+const RestaurantDetails = require("../models/restaurantDetailsModel");
 const calculateDistance = require("../Utils/CalculateDistance");
 const DeliveryAgent = require("../models/DeliveryAgentDetails");
 const CONSTANTS = require("../constants/constants");
@@ -32,6 +33,7 @@ exports.placeOrder = async (req, res) => {
     items,
     deliveryDetails,
     couponCode,
+    paymentMode,
   } = req.body;
 
   try {
@@ -40,6 +42,21 @@ exports.placeOrder = async (req, res) => {
     let finalPrice = 0;
     let appliedCoupon = null;
     const unavailableDishes = [];
+
+    const restaurantId = items[0].restaurant;  // Assuming all items are from the same restaurant
+    const restaurant = await RestaurantDetails.findById(restaurantId);
+
+    if (!restaurant) {
+      return res.status(404).json({ error: "Restaurant not found." });
+    }
+
+    if (restaurant.availabilityStatus !== "Available") {  // Assuming 'available' is the flag for restaurant status
+      return res.status(400).json({
+        error: `The restaurant ${restaurant.restaurantDetails.restaurantName} is currently unavailable. Please try again later.`,
+      });
+    }
+
+
     for (const item of items) {
       const dish = await Dish.findOne({
         _id: item.dishId,
@@ -119,33 +136,7 @@ exports.placeOrder = async (req, res) => {
         return res.status(400).json({ error: "Invalid coupon code or coupon not available for this restaurant." });
       }
     }
-    //  // Find an available delivery agent
-    //  const availableAgent = await DeliveryAgent.findOneAndUpdate(
-    //   { availabilityStatus: "Available" },
-    //   { availabilityStatus: "Unavailable" }, // Mark as busy
-    //   { new: true }
-    // );
-
-    // if (!availableAgent) {
-    //   return res
-    //     .status(400)
-    //     .json({ error: "No delivery agent is available at the moment." });
-    // }  
-
-    // **Find nearest available delivery agent using Ola Maps API**  ⭐ MODIFIED ⭐
-    //  const availableAgents = await DeliveryAgent.find({ availabilityStatus: "Available" });
-    //  if (!availableAgents.length) {
-    //    return res.status(400).json({ error: "No delivery agent is available at the moment." });
-    //  }
-
-    //  // **Sort agents by proximity using Ola Maps**  ⭐ NEW ⭐
-    //  const nearestAgent = await findNearestAgent(availableAgents, address.location);
-    // Calculate estimated delivery time
-    //  const travelTime = await calculateDistance(
-    //   availableAgent?.location, // Agent's location
-    //   deliveryDetails?.deliveryAddress         // Customer's delivery address
-    // );
-
+   
     const preparationTime = 10;
     const bufferTime = 15;
     const estimatedDeliveryTime = 30 + preparationTime + bufferTime;
@@ -169,6 +160,7 @@ exports.placeOrder = async (req, res) => {
       //   contact: availableAgent?.contact,
       // },
       estimatedDeliveryTime: new Date(Date.now() + estimatedDeliveryTime * 60000),
+      paymentMode:paymentMode,
       // estimatedDeliveryTime:null
     });
 

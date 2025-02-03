@@ -54,6 +54,23 @@ const dishSchema = new mongoose.Schema({
     image: {
         type: String,
     },
+    isSpecial:{
+        type: Boolean,
+        default: false
+    },
+    isReccomended: {
+        type: Boolean,
+        default: false,
+    },
+    offerApplied: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'offers',
+        allowNull: true,
+        default: null,
+    },
+    revisedPrice: {
+        type: Number,
+    },
     createdAt: {
         type: Date,
         default: Date.now,
