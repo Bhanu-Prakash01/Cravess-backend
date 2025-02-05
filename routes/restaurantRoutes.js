@@ -18,7 +18,12 @@ const {
   handedOverOrder,
   getAllOrdersByRestaurant,
   getAllOrderReceived,
-  acceptOrDeclineOrder
+  acceptOrDeclineOrder,
+  AddRecommendedDish,
+  RemoveRecommendedDish,
+  AddSpecialDish,
+  RemoveSpecialDish,
+  dashboardCounts
 } = require("../controllers/restaurantController");
 const { auth, isRestaurant } = require("../middlewares/RBAC");
 
@@ -49,6 +54,16 @@ router.get("/getAllDishes",getAllDishes);
 router.get("/getDishById/:id",getDishById);
 
 router.delete("/deleteDishes/:id",auth, isRestaurant, deleteDishesById);
+
+router.post("/add-recommended-dishes",auth, isRestaurant, AddRecommendedDish);
+
+router.post("/remove-recommended-dishes",auth, isRestaurant, RemoveRecommendedDish);
+
+router.post("/add-special-dishes",auth, isRestaurant, AddSpecialDish);
+
+router.post("/remove-special-dishes",auth, isRestaurant, RemoveSpecialDish);
+
+router.get("/dashboardCounts/:id",auth, isRestaurant, dashboardCounts);
 
 // order related
 

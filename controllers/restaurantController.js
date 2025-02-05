@@ -6,7 +6,7 @@ const Order = require("../models/orderSchema");
 const DeliveryAgent = require("../models/DeliveryAgentDetails");
 const { uploadMultiDocuments, uploadSingleDocument } = require("../Utils/Cloudinary");
 const { findNearestAgent, assignAgentWithTimeout } = require("../Helper/assignAgents");
-
+const mongoose = require("mongoose");
 const validateFields = (fields, requiredFields) => {
   for (const field of requiredFields) {
     if (!fields[field]) {
@@ -407,6 +407,114 @@ exports.getAllDishes = async (req, res) => {
   }
 };
 
+exports.AddRecommendedDish = async (req, res) => {
+  try {
+    const { restaurantId, dishIds } = req.body;
+
+    if (!restaurantId || !dishIds || !Array.isArray(dishIds)) {
+      return res.status(400).json({ error: "Restaurant ID and an array of Dish IDs are required." });
+    }
+
+    // Update dishes to set isRecommended to true
+    const updatedDishes = await Dish.updateMany(
+      { _id: { $in: dishIds }, restaurant: restaurantId },
+      { $set: { isReccomended: true } }
+    );
+
+    if (updatedDishes.modifiedCount === 0) {
+      return res.status(404).json({ message: "No dishes updated. Ensure the dish IDs belong to the restaurant." });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `${updatedDishes.modifiedCount} dish(es) marked as recommended.`,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.RemoveRecommendedDish = async (req, res) => {
+  try {
+    const { restaurantId, dishIds } = req.body;
+
+    if (!restaurantId || !dishIds || !Array.isArray(dishIds)) {
+      return res.status(400).json({ error: "Restaurant ID and an array of Dish IDs are required." });
+    }
+
+    // Update dishes to set isRecommended to false
+    const updatedDishes = await Dish.updateMany(
+      { _id: { $in: dishIds }, restaurant: restaurantId },
+      { $set: { isReccomended: false } }
+    );
+
+    if (updatedDishes.modifiedCount === 0) {
+      return res.status(404).json({ message: "No dishes updated. Ensure the dish IDs belong to the restaurant." });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `${updatedDishes.modifiedCount} dish(es) unmarked as recommended.`,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.AddSpecialDish = async (req, res) => {
+  try {
+    const { restaurantId, dishIds } = req.body;
+
+    if (!restaurantId || !dishIds || !Array.isArray(dishIds)) {
+      return res.status(400).json({ error: "Restaurant ID and an array of Dish IDs are required." });
+    }
+
+    // Update dishes to set isRecommended to true
+    const updatedDishes = await Dish.updateMany(
+      { _id: { $in: dishIds }, restaurant: restaurantId },
+      { $set: { isSpecial: true } }
+    );
+
+    if (updatedDishes.modifiedCount === 0) {
+      return res.status(404).json({ message: "No dishes updated. Ensure the dish IDs belong to the restaurant." });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `${updatedDishes.modifiedCount} dish(es) marked as special.`,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.RemoveSpecialDish = async (req, res) => {
+  try {
+    const { restaurantId, dishIds } = req.body;
+
+    if (!restaurantId || !dishIds || !Array.isArray(dishIds)) {
+      return res.status(400).json({ error: "Restaurant ID and an array of Dish IDs are required." });
+    }
+
+    // Update dishes to set isRecommended to false
+    const updatedDishes = await Dish.updateMany(
+      { _id: { $in: dishIds }, restaurant: restaurantId },
+      { $set: { isSpecial: false } }
+    );
+
+    if (updatedDishes.modifiedCount === 0) {
+      return res.status(404).json({ message: "No dishes updated. Ensure the dish IDs belong to the restaurant." });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `${updatedDishes.modifiedCount} dish(es) unmarked as special.`,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.getAllOrderReceived = async (req, res) => {
   try {
     const restaurantId = req.params.id;
@@ -491,7 +599,6 @@ const assignDeliveryAgent = async (orderId) => {
   }
 };
 
-
 exports.handedOverOrder = async (req, res) => {
   const { orderId } = req.body;
   try {
@@ -511,3 +618,92 @@ exports.handedOverOrder = async (req, res) => {
 
 
 };
+
+exports.dashboardCounts = async (req, res) => {
+  const  id = req.params.id;
+  const restaurant = await User.findById({_id:id});
+  const restaurantId = restaurant.additionalDetail?.restaurantId;
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const startOfWeek = new Date();
+  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+  const restaurantObjectId =new mongoose.Types.ObjectId(restaurantId);
+  try {
+    const [todayOrders, weekOrders, monthOrders, statusCounts, itemsSoldToday] = await Promise.all([
+      Order.find({
+        'items.restaurant':restaurantId,
+        createdAt: { $gte: startOfDay },
+      }).select("_id discountedPrice orderStatus"),
+      Order.find({
+        'items.restaurant': restaurantId,
+        createdAt: { $gte: startOfWeek },
+      }).select("_id discountedPrice orderStatus"),
+      Order.find({
+        'items.restaurant': restaurantId,
+        createdAt: { $gte: startOfMonth },
+      }).select("_id discountedPrice orderStatus"),
+      Order.aggregate([
+        {
+          $match: {
+            'items.restaurant': restaurantObjectId,
+          },
+        },
+        {
+          $group: {
+            _id: "$orderStatus",
+            count: { $sum: 1 },
+          },
+        },
+      ]),
+      Order.aggregate([
+        {
+          $match: {
+            'items.restaurant':restaurantObjectId,
+            createdAt: { $gte: startOfDay },
+          },
+        },
+        { $unwind: "$items" },
+        {
+          $group: {
+            _id: null,
+            totalItems: { $sum: "$items.quantity" },
+          },
+        },
+      ]),
+    ]);
+   
+    const totalOrdersToday = todayOrders.length;
+    const totalAmountToday = todayOrders.reduce((sum, order) => sum + order.discountedPrice, 0);
+    const averageOrderValue = totalOrdersToday > 0 ? (totalAmountToday / totalOrdersToday).toFixed(2) : 0;
+
+    const totalOrdersThisWeek = weekOrders.length;
+    const totalOrdersThisMonth = monthOrders.length;
+
+    const pendingOrders = statusCounts.find(status => status._id === 'Pending')?.count || 0;
+    const processingOrders = statusCounts.find(status => status._id === 'Processing')?.count || 0;
+    const deliveredOrders = statusCounts.find(status => status._id === 'Delivered')?.count || 0;
+
+    const totalItemsSoldToday = itemsSoldToday[0]?.totalItems || 0;
+
+    res.json({
+      totalOrdersToday,
+      averageOrderValue,
+      totalOrdersThisWeek,
+      totalOrdersThisMonth,
+      pendingOrders,
+      processingOrders,
+      deliveredOrders,
+      totalItemsSoldToday,
+    });
+
+  } catch (error) {
+    console.error('Error fetching dashboard data:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}

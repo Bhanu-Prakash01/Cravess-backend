@@ -9,9 +9,14 @@ const offerSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  discountPercentage: {
-    type: Number,
+  offerType: {
+    type: String,
+    enum: ['PERCENTAGE', 'FLAT', 'BOGO'],
     required: true,
+  },
+  discountValue: {
+    type: Number,
+    // required: true,
   },
   validFrom: {
     type: Date,
@@ -29,14 +34,14 @@ const offerSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
-  restaurant: {
+  restaurantId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Restaurant',
+    ref: 'RestaurantDetails',
     required: true,
   },
-  dishes: [{
+  dishIds: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Dish',
+    ref: 'dishes',
     required: true,
   }],
   createdAt: {

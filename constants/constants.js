@@ -5,6 +5,7 @@ const CONSTANTS = {
         ORDER_STATUS:["Placed","Accepted","Assigning", "Processing","Dispatched", "Delivered", "Cancelled"],
         DELIVERY_STATUS:["Pending", "Out for Delivery", "Delivered", "Cancelled"],
         PAYMENT_STATUS:["Pending", "Completed", "Failed"],
+        PAYMENT_MODE:["Cash", "Card", "UPI","Wallet","Online"],
         DISH_TYPE:["Appetizer", "Main Course", "Dessert", "Beverage","Starters", "Salads", "Sides", "Soups", "Breads", "Bakery", "Other"],
         DISH_CATEGORY:["Veg", "NonVeg"],
         LOCATION:["Point"],

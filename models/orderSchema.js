@@ -64,6 +64,10 @@ const orderSchema = new mongoose.Schema({
     enum: CONSTANTS.ENUM.PAYMENT_STATUS,
     default: "Pending",
   },
+  paymentMode:{
+    type: String,
+    enum: CONSTANTS.ENUM.PAYMENT_MODE,
+  },
   deliveryDetails: deliveryDetailsSchema,
   orderStatus: {
     type: String,

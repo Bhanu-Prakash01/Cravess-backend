@@ -127,6 +127,10 @@ const deliveryAgentDetailsSchema = new mongoose.Schema({
     date: { type: Date, default: Date.now },
     earnings: Number,
   }],
+  isVerified: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 module.exports = mongoose.model(
