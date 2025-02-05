@@ -457,8 +457,6 @@ exports.deliveryAgentDashboardCounts = async (req, res) => {
       ])
     ]);
 
-    console.log(deliveredToday,cashCollectedToday,cashCollectedThisMonth)
-
     // Extract totals from aggregation results
     const totalCashCollectedToday = cashCollectedToday[0]?.totalCollected || 0;
     const totalCashCollectedThisMonth = cashCollectedThisMonth[0]?.totalCollected || 0;
