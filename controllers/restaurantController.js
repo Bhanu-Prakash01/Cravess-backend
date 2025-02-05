@@ -399,6 +399,9 @@ exports.getAllDishes = async (req, res) => {
         { dishName: dishName ? { $regex: dishName, $options: 'i' } : { $exists: true } },
         { dishType: dishType ? dishType : { $exists: true } },
       ],
+    }).populate({
+      path: 'restaurant',
+      select: 'restaurantDetails'
     });
 
     res.status(200).json({ success: true, message: 'Dishes fetched successfully', data: dishes });
