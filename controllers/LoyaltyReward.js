@@ -81,16 +81,24 @@ exports.awardPoints = async (userId, amountSpent) => {
         loyaltyPoints: 0, // Initialize loyalty points
         favoriteRestaurants: [],
         favoriteDishes: [],
+        // loyaltyPointsLog: [],
       });
     }
 
     // Add points to UserDetails
     userDetails.loyaltyPoints += pointsToAward;
+     // Log the loyalty points earned
+     userDetails.loyaltyPointsLog.push({
+      pointsEarned: pointsToAward,
+      earnedFrom: "Order", // Since it's from an order
+      earnedOn: new Date(),
+    });
     await userDetails.save();
 
     return {
       message: `${pointsToAward} points awarded successfully`,
       totalLoyaltyPoints: userDetails.loyaltyPoints,
+      loyaltyPointsLog: userDetails.loyaltyPointsLog.slice(-1)[0], 
     };
   } catch (err) {
     console.error("Error awarding points:", err.message);
@@ -104,5 +112,37 @@ exports.redeemPoints = async (userId, points) => {
   if (user) {
     user.points -= points;
     await user.save();
+  }
+};
+
+
+exports.getLoyaltyPointsByUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    // Find user details
+    const userDetails = await UserDetails.findById({_id:user.additionalDetail}).select("loyaltyPointsLog loyaltyPoints");
+
+    if (!userDetails) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+
+    return res.status(200).json({
+      success: true,
+      message: "Loyalty points log retrieved successfully",
+      data:{
+        totalLoyaltyPoints: userDetails.loyaltyPoints,
+        loyaltyPointsLog: userDetails.loyaltyPointsLog,
+      }
+     
+    });
+  } catch (error) {
+    console.error("Error fetching loyalty points log:", error.message);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };

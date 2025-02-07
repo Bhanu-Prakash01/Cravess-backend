@@ -1,5 +1,6 @@
 
 const mongoose = require("mongoose");
+const CONSTANTS = require("../constants/constants");
 
 const userDetailsSchema = new mongoose.Schema({
   addresses: [
@@ -12,6 +13,19 @@ const userDetailsSchema = new mongoose.Schema({
   totalAmountSpent : Number,
   preferences: [String],
   loyaltyPoints: Number, 
+  loyaltyPointsLog: [
+    {
+      pointsEarned: Number,
+      earnedFrom: {
+        type: String,
+        enum:CONSTANTS.ENUM.EARNED_FROM
+      },
+      earnedOn: {
+        type: Date,
+        default: Date.now, // Timestamp of when points were earned
+      },
+    },
+  ],
   favoriteRestaurants: [
     {
       type: mongoose.Schema.Types.ObjectId,

@@ -5,7 +5,8 @@ const router = express.Router();
 const {
   addRewards,
   activateReward,
-  redeemPoints
+  redeemPoints,
+  getLoyaltyPointsByUser
 } = require("../controllers/LoyaltyReward");
 const { auth, isRestaurant, isAdmin, isDeliveryAgent, isUser } = require("../middlewares/RBAC");
 
@@ -17,5 +18,7 @@ router.patch('/api/rewards/:rewardId/activate', auth,isAdmin, activateReward);
 
 // Route to redeem points for a reward
 router.patch('redeem/:rewardId/:userId', auth,isUser, redeemPoints);
+
+router.get("/loyalty-points-log/:userId",auth, isUser, getLoyaltyPointsByUser);
 
 module.exports = router;
