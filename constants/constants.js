@@ -20,6 +20,7 @@ const CONSTANTS = {
         SUPPORT_TICKET_STATUS:["Open", "In Progress", "Resolved", "Closed"],
         USER_ADDRESS_TYPE: ["Home","Office","Other",],
         DISCOUNT_TYPE:["Percentage", "Flat"],
+        EARNED_FROM:["Order", "Promotion", "Referral", "Other"],
     }
 
 };
