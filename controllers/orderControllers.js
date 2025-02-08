@@ -467,7 +467,7 @@ exports.getAddedItemsInCartByUser = async (req, res) => {
       return res.status(404).json({ error: "Cart not found" });
     }
     if (cart.items.length === 0) {
-      return res.status(200).json({ message: "Cart is empty. Please add some items" });
+      return res.status(200).json({ success: true, message: "Cart is empty. Please add some items", data: [] });
     }
     res.status(200).json({ success: true, message: "Cart fetched successfully", data: cart });
   } catch (error) {
