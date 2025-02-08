@@ -359,8 +359,11 @@ exports.addToCart = async (req, res) => {
       return res.status(404).json({ error: "Dish not found" });
     }
 
-    if (!quantity || quantity <= 0) {
-      return res.status(400).json({ error: "Quantity must be a positive number" });
+    // if (!quantity || quantity <= 0) {
+    //   return res.status(400).json({ error: "Quantity must be a positive number" });
+    // }
+    if (typeof quantity !== "number" || !Number.isInteger(quantity) || quantity <= 0) {
+      return res.status(400).json({ error: "Quantity must be a positive integer" });
     }
 
     let cart = await Cart.findOne({ user: userId });
@@ -462,6 +465,9 @@ exports.getAddedItemsInCartByUser = async (req, res) => {
     const cart = await Cart.findOne({ user: userId }).select("-__v -items._id");
     if (!cart) {
       return res.status(404).json({ error: "Cart not found" });
+    }
+    if (cart.items.length === 0) {
+      return res.status(200).json({ message: "Cart is empty. Please add some items" });
     }
     res.status(200).json({ success: true, message: "Cart fetched successfully", data: cart });
   } catch (error) {
