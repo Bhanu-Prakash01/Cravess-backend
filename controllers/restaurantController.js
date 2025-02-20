@@ -720,9 +720,9 @@ exports.dashboardCounts = async (req, res) => {
 
 
 exports.uploadSingleFile = async (req, res) => {
-  console.log(req.file, req.body);
+  const {filePath, folderName, restaurant} = req.body;
   try {
-    const result = await uploadSingleDocument(req.file.path, req.file.originalname, req.body.restaurant);
+    const result = await uploadSingleDocument(filePath, folderName, restaurant);
     res.status(200).json({ success: true, message: "File uploaded successfully", data: result });
   } catch (error) {
     res.status(500).json({ error: error.message });
