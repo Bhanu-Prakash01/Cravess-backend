@@ -9,7 +9,8 @@ const {
   confirmOrderDelivery,
   getOrderRequestByAgentId,
   getAcceptedOrderDetails,
-  deliveryAgentDashboardCounts
+  deliveryAgentDashboardCounts,
+  orderHistory
 } = require("../controllers/DeliveryAgentController");
 
 const {
@@ -30,6 +31,7 @@ router.post("/acceptOrDeclineOrder", auth, isDeliveryAgent, agentAcceptOrDecline
 router.get("/getAcceptedOrderDetails/:orderId", auth, isDeliveryAgent, getAcceptedOrderDetails);
 router.post("/confirmOrderDelivery", auth, isDeliveryAgent, confirmOrderDelivery);
 
-router.get("/deliveryAgentDashboardCounts/:id", auth, isDeliveryAgent, deliveryAgentDashboardCounts)
+router.get("/deliveryAgentDashboardCounts/:id", auth, isDeliveryAgent, deliveryAgentDashboardCounts);
+router.get('/orderHistory/:id', auth, isDeliveryAgent, orderHistory);
 
 module.exports = router;

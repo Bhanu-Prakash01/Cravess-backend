@@ -46,6 +46,6 @@ updatedAt: {
     type: Date,
     default: Date.now,
 },
-});
+},{ timestamps: true });
 
 module.exports = mongoose.model("UserDetails", userDetailsSchema,"UserDetails");

@@ -4,22 +4,44 @@ const dishSchema = require('./dishSchema');
 const CONSTANTS = require('../constants/constants');
 const restaurantDetailsSchema = new mongoose.Schema({
     restaurantDetails: {
-            restaurantName: {
-                type: String,
-                // required: true,
-            },
-      
+        restaurantName: {
+            type: String,
+            required: true,
+        },
+        ownerName: {
+            type: String,
+            required: true,
+        },
+        ownerDOB: {
+            type: Date,
+        },
+        ownerGender: {
+            type: String,
+            enum: CONSTANTS.ENUM.GENDER,
+        },
+        openingTime: {
+            type: String,
+            required: true
+        },
+        closingTime: {
+            type: String,
+            required: true
+        },
+        email:{
+            type: String,
+        }
+
     },
-    full_restaurant_address:{
+    full_restaurant_address: {
         addressLine1: String,
         addressLine2: String,
         landmark: String,
         city: String,
         state: String,
         pincode: Number
-      },
-      document: [{ type: String }],
-        // required: true,,
+    },
+    document: [{ type: String }],
+    // required: true,,
     accountDetails: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "AccountDetails",
@@ -43,11 +65,6 @@ const restaurantDetailsSchema = new mongoose.Schema({
     },
     img: String,
     description: String,
-        // required: true,,
-    openingTime: String,
-        // required: true,,
-    closingTime:String,
-    // dishes:[dishSchema],
     discounts: [discountSchema],
     dishTypes: {
         type: [String],
@@ -56,25 +73,25 @@ const restaurantDetailsSchema = new mongoose.Schema({
     },
     ratingAndReview: [
         {
-          review: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "RatingAndReview",
-          },
-          rating: { type: Number, required: true },
+            review: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "RatingAndReview",
+            },
+            rating: { type: Number, required: true },
         },
-      ],
+    ],
     current_rating: {
         type: Number,
         default: 0,
         validate: {
             validator: function (value) {
-              return !isNaN(value); // Ensure the value is not NaN
+                return !isNaN(value); // Ensure the value is not NaN
             },
             message: "Invalid value for current_rating. Must be a valid number.",
-          },
+        },
     },
-    totalProducts:Number,
-    totalSales:Number,
+    totalProducts: Number,
+    totalSales: Number,
     createdAt: {
         type: Date,
         default: Date.now,
@@ -89,4 +106,4 @@ const restaurantDetailsSchema = new mongoose.Schema({
 //     description: "text",
 //     tags: "text",
 //   });
-module.exports = mongoose.model('RestaurantDetails', restaurantDetailsSchema,"RestaurantDetails");
+module.exports = mongoose.model('RestaurantDetails', restaurantDetailsSchema, "RestaurantDetails");

@@ -6,6 +6,7 @@ const AdminDetails = require('../models/AdminDetails');
 const DeliveryAgentDetails = require('../models/DeliveryAgentDetails');
 const RestaurantDetails = require('../models/restaurantDetailsModel');
 const UserDetails = require('../models/userDetailsSchema');  
+
 exports.userAuth = async (req, res) => {
   const { email, phoneNumber, name, otp, role, additionalDetail } = req.body;
   if (!email && !phoneNumber) {
@@ -34,7 +35,7 @@ exports.userAuth = async (req, res) => {
 
     // Find the user by phoneNumber
     let user = await userSchema.findOne({ phone: phoneNumber });
-    const token = jwt.sign({ role: user?.role || role, phoneNumber: user?.phone || phoneNumber, email: user?.email || email }, process.env.JWT_SECRET_KEY, {
+    const token = jwt.sign({ role: user?.role || role, phoneNumber: user?.phone || phoneNumber }, process.env.JWT_SECRET_KEY, {
       expiresIn: '12h' // expires in 12h
     });
 
