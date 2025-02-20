@@ -2,11 +2,11 @@ const mongoose = require("mongoose");
 const CONSTANTS = require("../constants/constants");
 
 const deliveryAgentDetailsSchema = new mongoose.Schema({
- 
+
   agent_name: String,
-  t_shirt_size:{
-    type: String,    
-    enum:CONSTANTS.ENUM.T_SHIRT_SIZE ,
+  t_shirt_size: {
+    type: String,
+    enum: CONSTANTS.ENUM.T_SHIRT_SIZE,
   },
   vehicleDetails: {
     vehicle_type: String,
@@ -17,7 +17,7 @@ const deliveryAgentDetailsSchema = new mongoose.Schema({
     fuel_type: String,
     vehicle_reg_authority: String,
   },
-  full_address:{
+  full_address: {
     addressLine1: String,
     addressLine2: String,
     landmark: String,
@@ -70,7 +70,7 @@ const deliveryAgentDetailsSchema = new mongoose.Schema({
       },
       message: "Invalid value for current_rating. Must be a valid number.",
     },
-},
+  },
   gender: {
     type: String,
     enum: CONSTANTS.ENUM.GENDER,
@@ -99,7 +99,7 @@ const deliveryAgentDetailsSchema = new mongoose.Schema({
       message: "PAN number should be in the format ABCDE1234A.",
     },
   },
-  dateOfBirth:{
+  dateOfBirth: {
     type: Date,
     // required: true,
     // validate: {
@@ -129,7 +129,7 @@ const deliveryAgentDetailsSchema = new mongoose.Schema({
   }],
   isVerified: {
     type: Boolean,
-    default: false,
+    default: null,
   },
 });
 

@@ -83,6 +83,7 @@ userSchema.pre("save", function (next) {
 
 // Function to encrypt the value
 function encrypt(text) {
+  if (!text) return "";
   const cipher = crypto.createCipheriv('aes-256-cbc', encryptionKey, iv);
   let encrypted = cipher.update(text, 'utf8', 'hex');
   encrypted += cipher.final('hex');
@@ -92,6 +93,7 @@ function encrypt(text) {
 
 // Function to decrypt the value
 function decrypt(encryptedText) {
+  if (!encryptedText) return "";
   // Split the stored value to extract IV and encrypted data
   const [ivHex, encrypted] = encryptedText.split(':');
   const iv = Buffer.from(ivHex, 'hex');

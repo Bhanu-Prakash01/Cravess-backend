@@ -167,7 +167,6 @@ exports.createDeliveryAgent = async (req, res) => {
   }
 };
 
-
 exports.getDeliveryAgentDetailsById = async (req, res) => {
   try {
 
@@ -318,6 +317,7 @@ exports.agentAcceptOrDecline = async (req, res) => {
         availabilityStatus: "Unavailable",
         $push: { assignedOrders: orderId },
         $pull: { requestedOrders: orderId },
+        $push: { ordersAccepted: orderId }
       });
 
       await DeliveryAgentDetails.updateMany(
@@ -391,7 +391,8 @@ exports.confirmOrderDelivery = async (req, res) => {
 
     await DeliveryAgentDetails.findByIdAndUpdate({ _id: agent.additionalDetail }, {
       availabilityStatus: "Available",
-      $pull: { assignedOrders: orderId }
+      $pull: { assignedOrders: orderId },
+      $push: { ordersDelivered: orderId }
     });
     res.json({ success: true, message: "Order delivered successfully." });
 
@@ -474,5 +475,28 @@ exports.deliveryAgentDashboardCounts = async (req, res) => {
   }
 };
 
+
+exports.orderHistory = async (req, res) => {
+  const deliveryAgentId = req.params.id;
+  try {
+    const orders = await Order.find({ assignedAgent: deliveryAgentId })
+      .select('_id items orderStatus discountedPrice createdAt paymentStatus assignedAgent')
+      .populate({
+        path: 'items.dishId',
+        model: 'dishes',
+        select: 'image current_rating quantity'
+      })
+      // .populate({
+      //   path: 'assignedAgent',
+      //   model: 'DeliveryAgentDetails',
+      //   select: 'agent_name'
+      // })
+      .exec();
+
+    res.status(200).json({ success: true, message: "Order history fetched successfully", data: orders });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
 
 

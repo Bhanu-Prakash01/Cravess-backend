@@ -2,7 +2,6 @@ const Reward = require("../models/RewardSchema");
 const User = require("../models/userModel");
 const UserDetails = require("../models/userDetailsSchema");
 const mongoose = require("mongoose");
-const { ObjectId } = mongoose.Types;
 exports.addRewards = async (req, res) => {
   const { rewardName, pointsRequired, description, expiryDate } = req.body;
 
@@ -107,13 +106,27 @@ exports.awardPoints = async (userId, amountSpent) => {
 };
 
 
-exports.redeemPoints = async (userId, points) => {
-  const user = await User.findById(new ObjectId(userId));
-  if (user) {
-    user.points -= points;
+exports.redeemPoints = async (req,res) => {
+  try {
+    const { userId } = req.body;
+   
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    const userDetails = await UserDetails.findOne({ _id: user.additionalDetail });
+    if (userDetails) {
+      userDetails.set({ loyaltyPoints: 0 });
+      await userDetails.save(); // Save the updated userDetails
+    }
     await user.save();
+    res.status(200).json({ success: true, message: "All points redeemed successfully", data: user });
+  } catch (error) {
+    console.error("Error redeeming points:", error);
+    res.status(500).json({ error: err.message });
   }
 };
+
 
 
 exports.getLoyaltyPointsByUser = async (req, res) => {

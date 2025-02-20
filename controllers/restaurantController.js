@@ -34,16 +34,12 @@ exports.addRestaurantDetails = async (req, res) => {
     description,
     discounts,
     img,
-    openingTime,
-    closingTime,
     dishTypes
   } = req.body;
   const validationError = validateFields(req.body, [
     "restaurantDetails",
     "document",
     // "location",
-    "openingTime",
-    "closingTime",
     "dishTypes"
   ]);
   if (validationError) {
@@ -61,18 +57,18 @@ exports.addRestaurantDetails = async (req, res) => {
       const newAccountDetails = new AccountDetails(accountDetails);
       savedAccountDetails = await newAccountDetails.save();
     }
-    const folder = 'restaurant-images';
-    const imgUrl = await uploadSingleDocument(img, folder, userId);
-    if (!imgUrl) {
-      return res.status(400).json({ error: 'No image uploaded or failed to upload image' });
-    }
+    // const folder = 'restaurant-images';
+    // const imgUrl = await uploadSingleDocument(img, folder, userId);
+    // if (!imgUrl) {
+    //   return res.status(400).json({ error: 'No image uploaded or failed to upload image' });
+    // }
 
 
-    const folderName = 'restaurant-documents';
-    const documentUrl = await uploadMultiDocuments(document, folderName, userId);
-    if (!documentUrl) {
-      return res.status(400).json({ error: 'No document uploaded or failed to upload document' });
-    }
+    // const folderName = 'restaurant-documents';
+    // const documentUrl = await uploadMultiDocuments(document, folderName, userId);
+    // if (!documentUrl) {
+    //   return res.status(400).json({ error: 'No document uploaded or failed to upload document' });
+    // }
 
     // Create new RestaurantDetails
     const newRestaurant = new RestaurantDetails({
@@ -85,16 +81,15 @@ exports.addRestaurantDetails = async (req, res) => {
         state,
         pincode
       },
-      document: documentUrl,
+      document,
       accountDetails: savedAccountDetails,
       availabilityStatus,
       location,
       description,
       // dishes,
       discounts,
-      img: imgUrl,
-      openingTime,
-      closingTime,
+      img,
+      
       dishTypes
     });
 
@@ -114,7 +109,9 @@ exports.addRestaurantDetails = async (req, res) => {
       restaurantId: savedRestaurant._id,
     };
 
-    user.image = imgUrl;
+    user.image = img;
+    user.userName = restaurantDetails.ownerName;
+    user.email = restaurantDetails?.email;
 
 
     await user.save();
@@ -244,27 +241,31 @@ exports.updateRestaurantProfile = async (req, res) => {
 exports.changeAvailabilityStatus = async (req, res) => {
   const { availabilityStatus } = req.body;
   try {
-    const restaurantId = req.params.id;
+    const userId = req.params.id;
+    const restaurant = await User.findById(userId);
+    if (!restaurant) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
     // Find the restaurant by ID
-    const restaurant = await RestaurantDetails.findById(restaurantId);
+    const restaurantD = await RestaurantDetails.findById(restaurant.additionalDetail);
 
-    if (!restaurant) {
+    if (!restaurantD) {
       return res.status(404).json({ message: 'Restaurant not found' });
     }
 
     // Update the availability status if provided
     if (availabilityStatus) {
-      restaurant.availabilityStatus = availabilityStatus;
+      restaurantD.availabilityStatus = availabilityStatus;
     } else {
       return res.status(400).json({ message: 'Availability status is required' });
     }
 
     // Save the updated restaurant details
-    await restaurant.save();
+    await restaurantD.save();
 
     // Send a success response
-    res.status(200).json({ success: true, message: 'Availability status updated successfully', data: restaurant });
+    res.status(200).json({ success: true, message: 'Availability status updated successfully', data: restaurantD });
   } catch (error) {
     console.error('Error updating availability status:', error);
     res.status(500).json({ message: 'An error occurred while updating the availability status' });
@@ -533,7 +534,13 @@ exports.getAllOrdersByRestaurant = async (req, res) => {
   try {
     const restaurantId = req.params.id;
     const restaurant = await User.findById({_id:restaurantId});
-    const orders = await Order.find({ "items.restaurant": restaurant.additionalDetail?.restaurantId }).select("-__v  -estimatedDeliveryTime -deliveryDetails");
+    const orders = await Order.find({ "items.restaurant": restaurant.additionalDetail?.restaurantId })
+    .select("-__v  -estimatedDeliveryTime -deliveryDetails")
+    .populate({
+      path: 'items.dishId',
+      model: 'dishes',
+      select: 'image current_rating quantity'
+    }).exec();
     res.status(200).json({ success: true, message: "Orders fetched successfully", data: orders });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -710,3 +717,23 @@ exports.dashboardCounts = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
+
+
+exports.uploadSingleFile = async (req, res) => {
+  console.log(req.file, req.body);
+  try {
+    const result = await uploadSingleDocument(req.file.path, req.file.originalname, req.body.restaurant);
+    res.status(200).json({ success: true, message: "File uploaded successfully", data: result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.multipleFileUpload = async (req, res) => {
+  try {
+    const result = await uploadMultiDocuments(req.files);
+    res.status(200).json({ success: true, message: "All Files uploaded successfully", data: result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

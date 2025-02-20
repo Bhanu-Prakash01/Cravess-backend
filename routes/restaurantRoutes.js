@@ -23,7 +23,9 @@ const {
   RemoveRecommendedDish,
   AddSpecialDish,
   RemoveSpecialDish,
-  dashboardCounts
+  dashboardCounts,
+  multipleFileUpload,
+  uploadSingleFile
 } = require("../controllers/restaurantController");
 const { auth, isRestaurant } = require("../middlewares/RBAC");
 
@@ -74,5 +76,9 @@ router.get("/getAllOrdersByRestaurant/:id",auth, isRestaurant, getAllOrdersByRes
 router.post("/acceptOrDeclineOrder/:orderId",auth, isRestaurant, acceptOrDeclineOrder);
 
 router.post("/handOverOrder",auth, isRestaurant, handedOverOrder);
+
+router.post("/multipleFileUpload",auth, multipleFileUpload);
+
+router.post("/uploadSingleFile",auth,  uploadSingleFile);
 
 module.exports = router;
