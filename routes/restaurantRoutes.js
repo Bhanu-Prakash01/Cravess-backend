@@ -7,6 +7,7 @@ const {
   addRestaurantDetails,
   updateRestaurantProfile,
   getRestaurantDetailsById,
+  getRestaurantDetailsByUserId,
   changeAvailabilityStatus,
   addDish,
   getDishesByRestaurant,
@@ -31,7 +32,7 @@ const { auth, isRestaurant } = require("../middlewares/RBAC");
 
 // Route to get a restaurant
 router.get("/GetRestaurant/:id", getRestaurantDetailsById);
-
+router.get ('/getRestaurantByUserId/:id',getRestaurantDetailsByUserId);
 // Route to create a new restaurant
 router.post("/AddRestaurant", auth, isRestaurant, addRestaurantDetails);
 

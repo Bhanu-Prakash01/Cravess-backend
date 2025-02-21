@@ -139,6 +139,20 @@ exports.getRestaurantDetailsById = async (req, res) => {
   }
 };
 
+exports.getRestaurantDetailsByUserId = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const restaurantId = (await User.findById(userId)).additionalDetail.restaurantId;
+    const restaurant = await RestaurantDetails.findById(restaurantId);
+    if (!restaurant) {
+      return res.status(200).json({ success: true, message: "Restaurant not found", data:[] });
+    }
+    res.status(200).json({ success: true, message: "Restaurant details fetched successfully", data: restaurant });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
 // Update restaurant profile
 exports.updateRestaurantProfile = async (req, res) => {
   const {
@@ -246,9 +260,11 @@ exports.changeAvailabilityStatus = async (req, res) => {
     if (!restaurant) {
       return res.status(404).json({ message: 'User not found' });
     }
-
+    const restaurantId = restaurant.additionalDetail?.restaurantId || restaurant.additionalDetail;
+    const restaurantD = await RestaurantDetails.findById(restaurantId);
+    
     // Find the restaurant by ID
-    const restaurantD = await RestaurantDetails.findById(restaurant.additionalDetail);
+    // const restaurantD = await RestaurantDetails.findById(restaurant.additionalDetail || restaurant.additionalDetail.restaurantId);
 
     if (!restaurantD) {
       return res.status(404).json({ message: 'Restaurant not found' });
@@ -695,13 +711,12 @@ exports.dashboardCounts = async (req, res) => {
     const totalOrdersThisWeek = weekOrders.length;
     const totalOrdersThisMonth = monthOrders.length;
 
-    const pendingOrders = statusCounts.find(status => status._id === 'Pending')?.count || 0;
+    const pendingOrders = statusCounts.find(status => status._id === 'Placed')?.count || 0;
     const processingOrders = statusCounts.find(status => status._id === 'Processing')?.count || 0;
     const deliveredOrders = statusCounts.find(status => status._id === 'Delivered')?.count || 0;
 
     const totalItemsSoldToday = itemsSoldToday[0]?.totalItems || 0;
-
-    res.json({
+    const data ={
       totalOrdersToday,
       averageOrderValue,
       totalOrdersThisWeek,
@@ -710,7 +725,8 @@ exports.dashboardCounts = async (req, res) => {
       processingOrders,
       deliveredOrders,
       totalItemsSoldToday,
-    });
+    }
+    res.status(200).json({ success: true, message: "Dashboard data fetched successfully", data: data });
 
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
