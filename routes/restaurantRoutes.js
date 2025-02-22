@@ -18,6 +18,7 @@ const {
   updateDish,
   handedOverOrder,
   getAllOrdersByRestaurant,
+  getTodaysDeliveredOrdersByRestaurant,
   getAllOrderReceived,
   acceptOrDeclineOrder,
   AddRecommendedDish,
@@ -73,6 +74,8 @@ router.get("/dashboardCounts/:id",auth, isRestaurant, dashboardCounts);
 router.get("/getAllOrderReceived/:id",auth, isRestaurant, getAllOrderReceived);
 
 router.get("/getAllOrdersByRestaurant/:id",auth, isRestaurant, getAllOrdersByRestaurant);
+
+router.get("/getTodaysOrdersByRestaurant/:id",auth, isRestaurant, getTodaysDeliveredOrdersByRestaurant);
 
 router.post("/acceptOrDeclineOrder/:orderId",auth, isRestaurant, acceptOrDeclineOrder);
 
