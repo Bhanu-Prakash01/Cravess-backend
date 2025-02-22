@@ -302,11 +302,11 @@ exports.addDish = async (req, res) => {
   const { restaurant, dishName, price, description, available, dishType, category, image } = req.body;
 
   try {
-    const folder = 'dish-images';
-    const imgUrl = await uploadSingleDocument(image, folder, restaurant);
-    if (!imgUrl) {
-      return res.status(400).json({ error: 'No image uploaded or failed to upload image' });
-    }
+    // const folder = 'dish-images';
+    // const imgUrl = await uploadSingleDocument(image, folder, restaurant);
+    // if (!imgUrl) {
+    //   return res.status(400).json({ error: 'No image uploaded or failed to upload image' });
+    // }
     const newDish = new Dish({
       restaurant,
       dishName,
@@ -315,7 +315,7 @@ exports.addDish = async (req, res) => {
       available,
       dishType,
       category,
-      image: imgUrl
+      image
     });
 
 
@@ -561,7 +561,31 @@ exports.getAllOrdersByRestaurant = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-}
+};
+
+exports.getTodaysDeliveredOrdersByRestaurant = async (req, res) => {
+  try {
+    const restaurantId = req.params.id;
+    const restaurant = await User.findById({_id: restaurantId});
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
+    const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+    const orders = await Order.find({
+      "items.restaurant": restaurant.additionalDetail?.restaurantId,
+      "createdAt": { $gte: todayStart, $lte: todayEnd },
+      "orderStatus": "Delivered"
+    })
+    .select("-__v  -estimatedDeliveryTime -deliveryDetails")
+    .populate({
+      path: 'items.dishId',
+      model: 'dishes',
+      select: 'image current_rating quantity'
+    }).exec();
+    res.status(200).json({ success: true, message: "Today's delivered orders fetched successfully", data: orders });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
 exports.acceptOrDeclineOrder = async (req, res) => {
   const { orderId } = req.params;
