@@ -373,6 +373,7 @@ exports.addToCart = async (req, res) => {
         items: [
           {
             dishId: dishId,
+            dishImage: dish.image,
             quantity: quantity,
             price: dish.price,
             dishName: dish.dishName,
@@ -459,23 +460,71 @@ exports.switchRestaurant = async (req, res) => {
   }
 };
 
+// exports.getAddedItemsInCartByUser = async (req, res) => {
+//   try {
+//     const userId = req.params.id;
+//     const cart = await Cart.findOne({ user: userId }).select("-__v -items._id");
+    
+//     if (!cart) {
+//       return res.status(200).json({ success: true, message: "Cart not found or empty", data: {} });
+//     }
+//     if (cart.items.length === 0) {
+//       return res.status(200).json({ success: true, message: "Cart is empty. Please add some items", data: {} });
+//     }
+    
+//     res.status(200).json({ success: true, message: "Cart fetched successfully", data: cart });
+//   } catch (error) {
+//     res.status(400).json({ error: error.message });
+//   }
+// };
+
 exports.getAddedItemsInCartByUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    const cart = await Cart.findOne({ user: userId }).select("-__v -items._id");
-    
-    if (!cart) {
-      return res.status(200).json({ success: true, message: "Cart not found or empty", data: {} });
-    }
-    if (cart.items.length === 0) {
+
+    const cart = await Cart.findOne({ user: userId })
+      .select("-__v -items._id")
+      .populate({
+        path: "items.dishId",
+        select: "dishName image price description available dishType category",
+      })
+      .populate({
+        path: "items.restaurant",
+        select: "restaurantDetails openingTime closingTime",
+      });
+
+      console.log(cart,"cart");
+    if (!cart || cart.items.length === 0) {
       return res.status(200).json({ success: true, message: "Cart is empty. Please add some items", data: {} });
     }
-    
-    res.status(200).json({ success: true, message: "Cart fetched successfully", data: cart });
+
+    // Formatting the response to include the populated fields
+    const formattedItems = {
+      _id: cart._id,
+      user: cart.user,
+      createdAt: cart.createdAt,
+      updatedAt: cart.updatedAt,
+      items: cart.items.map(item => ({
+        dishId: item.dishId._id,
+        dishName: item.dishId.dishName,
+        dishImage: item.dishId.image,
+        available: item.dishId.available,
+        dishType: item.dishId.dishType,
+        category: item.dishId.category,
+        description: item.dishId.description,
+        quantity: item.quantity,
+        price: item.dishId.price,
+        restaurantId: item.restaurant._id,
+        restaurantName: item.restaurant.restaurantDetails.restaurantName,
+      })),
+    };
+
+    res.status(200).json({ success: true, message: "Cart fetched successfully", data: formattedItems });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
+
 
 exports.removeOneFromCart = async (req, res) => {
   try {
