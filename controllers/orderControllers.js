@@ -463,8 +463,9 @@ exports.getAddedItemsInCartByUser = async (req, res) => {
   try {
     const userId = req.params.id;
     const cart = await Cart.findOne({ user: userId }).select("-__v -items._id");
+    
     if (!cart) {
-      return res.status(404).json({ error: "Cart not found" });
+      return res.status(200).json({ success: true, message: "Cart not found or empty", data: [] });
     }
     if (cart.items.length === 0) {
       return res.status(200).json({ success: true, message: "Cart is empty. Please add some items", data: [] });
