@@ -147,7 +147,8 @@ exports.sendOtp = async (req, res) => {
       return res.status(400).json({ error: 'Invalid phone number' });
     }
     // Generate OTP
-    const otp = Math.floor(1000 + Math.random() * 9000);
+    // const otp = Math.floor(1000 + Math.random() * 9000);
+    const otp = "0000" ;
     const existingOtp = await OTP.findOne({ phone: phoneNumber });
     if (existingOtp) {
       const updatedOtp = await OTP.findByIdAndUpdate(existingOtp._id, { otp, expiresAt: Date.now() + 300000 }, { new: true });

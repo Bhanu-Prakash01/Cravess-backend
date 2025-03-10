@@ -367,9 +367,10 @@ exports.getAllFavouriteDishes = async (req, res) => {
       path: "favoriteDishes",
       select: "-createdAt -updatedAt -__v -ratingAndReview ",
     });
-    if (!userDetails) {
-      return res.status(404).json({ message: "UserDetails not found" });
+    if (!userDetails || !userDetails.favoriteDishes || userDetails.favoriteDishes.length === 0) {
+      return res.status(200).json({ success: true, message: "No favorite Dishes", data: [] });
     }
+
     res.status(200).json({ success: true, message: "Favourite dishes fetched successfully", data: userDetails.favoriteDishes });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -390,9 +391,10 @@ exports.getAllFavouriteRestaurants = async (req, res) => {
       path: "favoriteRestaurants",
       select: "-createdAt -updatedAt -__v -accountDetails -ratingAndReview -document -discounts -full_restaurant_address",
     });
-    if (!userDetails) {
-      return res.status(404).json({ message: "UserDetails not found" });
+    if (!userDetails || !userDetails.favoriteRestaurants || userDetails.favoriteRestaurants.length === 0) {
+      return res.status(200).json({ success: true, message: "No favorite restaurants", data: [] });
     }
+
     res.status(200).json({ success: true, message: "Favourite restaurants fetched successfully", data: userDetails.favoriteRestaurants });
   } catch (err) {
     res.status(500).json({ error: err.message });
