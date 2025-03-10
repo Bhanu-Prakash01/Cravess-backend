@@ -465,11 +465,12 @@ exports.getAddedItemsInCartByUser = async (req, res) => {
     const cart = await Cart.findOne({ user: userId }).select("-__v -items._id");
     
     if (!cart) {
-      return res.status(200).json({ success: true, message: "Cart not found or empty", data: [] });
+      return res.status(200).json({ success: true, message: "Cart not found or empty", data: {} });
     }
     if (cart.items.length === 0) {
-      return res.status(200).json({ success: true, message: "Cart is empty. Please add some items", data: [] });
+      return res.status(200).json({ success: true, message: "Cart is empty. Please add some items", data: {} });
     }
+    
     res.status(200).json({ success: true, message: "Cart fetched successfully", data: cart });
   } catch (error) {
     res.status(400).json({ error: error.message });
