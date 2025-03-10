@@ -13,6 +13,11 @@ const {
   orderHistory
 } = require("../controllers/DeliveryAgentController");
 
+const { 
+  multipleFileUpload,
+  uploadSingleFile
+} = require("../controllers/restaurantController");
+
 const {
   updateUser,
 } = require("../controllers/userProfileManagement");
@@ -33,5 +38,9 @@ router.post("/confirmOrderDelivery", auth, isDeliveryAgent, confirmOrderDelivery
 
 router.get("/deliveryAgentDashboardCounts/:id", auth, isDeliveryAgent, deliveryAgentDashboardCounts);
 router.get('/orderHistory/:id', auth, isDeliveryAgent, orderHistory);
+
+router.post("/multipleFileUpload",auth, multipleFileUpload);
+
+router.post("/uploadSingleFile",auth,  uploadSingleFile);
 
 module.exports = router;
